@@ -11,7 +11,6 @@ const pool = new Pool({
   ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
 });
 
-// ── Init DB tables ──────────────────────────────────────────
 async function initDB() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS bm_bags (
@@ -39,29 +38,27 @@ async function initDB() {
   console.log('DB tables ready');
 }
 
-// ── Health check ────────────────────────────────────────────
 app.get('/health', (req, res) => res.json({ ok: true, service: 'ballmill' }));
 
-// ── BAGS ────────────────────────────────────────────────────
 app.get('/bags', async (req, res) => {
   try {
     const { rows } = await pool.query('SELECT data FROM bm_bags ORDER BY created_at DESC');
     res.json(rows.map(r => r.data));
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { console.error('GET /bags:', e.message); res.status(500).json({ error: e.message }); }
 });
 
 app.post('/bags', async (req, res) => {
   try {
     const bags = Array.isArray(req.body) ? req.body : [req.body];
     for (const bag of bags) {
+      if (!bag.id) continue;
       await pool.query(
-        `INSERT INTO bm_bags(id, data) VALUES($1, $2)
-         ON CONFLICT(id) DO UPDATE SET data=$2, updated_at=NOW()`,
-        [bag.id, bag]
+        `INSERT INTO bm_bags(id, data) VALUES($1, $2) ON CONFLICT(id) DO UPDATE SET data=$2, updated_at=NOW()`,
+        [bag.id, JSON.stringify(bag)]
       );
     }
     res.json({ ok: true, count: bags.length });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { console.error('POST /bags:', e.message); res.status(500).json({ error: e.message }); }
 });
 
 app.delete('/bags/:id', async (req, res) => {
@@ -71,7 +68,6 @@ app.delete('/bags/:id', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// ── SALES ───────────────────────────────────────────────────
 app.get('/sales', async (req, res) => {
   try {
     const { rows } = await pool.query('SELECT data FROM bm_sales ORDER BY created_at DESC');
@@ -83,17 +79,16 @@ app.post('/sales', async (req, res) => {
   try {
     const sales = Array.isArray(req.body) ? req.body : [req.body];
     for (const sale of sales) {
+      if (!sale.id) continue;
       await pool.query(
-        `INSERT INTO bm_sales(id, data) VALUES($1, $2)
-         ON CONFLICT(id) DO UPDATE SET data=$2`,
-        [sale.id, sale]
+        `INSERT INTO bm_sales(id, data) VALUES($1, $2) ON CONFLICT(id) DO UPDATE SET data=$2`,
+        [sale.id, JSON.stringify(sale)]
       );
     }
     res.json({ ok: true, count: sales.length });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// ── SHIFTS ──────────────────────────────────────────────────
 app.get('/shifts', async (req, res) => {
   try {
     const { rows } = await pool.query('SELECT data FROM bm_shifts ORDER BY created_at DESC');
@@ -105,17 +100,16 @@ app.post('/shifts', async (req, res) => {
   try {
     const shifts = Array.isArray(req.body) ? req.body : [req.body];
     for (const shift of shifts) {
+      if (!shift.id) continue;
       await pool.query(
-        `INSERT INTO bm_shifts(id, data) VALUES($1, $2)
-         ON CONFLICT(id) DO UPDATE SET data=$2`,
-        [shift.id, shift]
+        `INSERT INTO bm_shifts(id, data) VALUES($1, $2) ON CONFLICT(id) DO UPDATE SET data=$2`,
+        [shift.id, JSON.stringify(shift)]
       );
     }
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// ── SETTINGS (operators, clients, feed materials, products, chute map) ──
 app.get('/settings', async (req, res) => {
   try {
     const { rows } = await pool.query('SELECT key, data FROM bm_settings');
@@ -130,32 +124,66 @@ app.post('/settings', async (req, res) => {
     const entries = Object.entries(req.body);
     for (const [key, data] of entries) {
       await pool.query(
-        `INSERT INTO bm_settings(key, data) VALUES($1, $2)
-         ON CONFLICT(key) DO UPDATE SET data=$2, updated_at=NOW()`,
-        [key, data]
+        `INSERT INTO bm_settings(key, data) VALUES($1, $2) ON CONFLICT(key) DO UPDATE SET data=$2, updated_at=NOW()`,
+        [key, JSON.stringify(data)]
       );
     }
     res.json({ ok: true });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { console.error('POST /settings:', e.message); res.status(500).json({ error: e.message }); }
 });
 
-// ── FULL SYNC (push all local data to server) ───────────────
+// FULL SYNC
 app.post('/sync', async (req, res) => {
   try {
     const { bags, sales, shifts, settings } = req.body;
-    if (bags) for (const b of bags) await pool.query(`INSERT INTO bm_bags(id,data) VALUES($1,$2) ON CONFLICT(id) DO UPDATE SET data=$2,updated_at=NOW()`, [b.id, b]);
-    if (sales) for (const s of sales) await pool.query(`INSERT INTO bm_sales(id,data) VALUES($1,$2) ON CONFLICT(id) DO NOTHING`, [s.id, s]);
-    if (shifts) for (const s of shifts) await pool.query(`INSERT INTO bm_shifts(id,data) VALUES($1,$2) ON CONFLICT(id) DO NOTHING`, [s.id, s]);
-    if (settings) {
+    // Bags
+    if (bags && bags.length) {
+      for (const b of bags) {
+        if (!b || !b.id) continue;
+        await pool.query(
+          `INSERT INTO bm_bags(id,data) VALUES($1,$2) ON CONFLICT(id) DO UPDATE SET data=$2,updated_at=NOW()`,
+          [b.id, JSON.stringify(b)]
+        );
+      }
+    }
+    // Sales
+    if (sales && sales.length) {
+      for (const s of sales) {
+        if (!s || !s.id) continue;
+        await pool.query(
+          `INSERT INTO bm_sales(id,data) VALUES($1,$2) ON CONFLICT(id) DO NOTHING`,
+          [s.id, JSON.stringify(s)]
+        );
+      }
+    }
+    // Shifts
+    if (shifts && shifts.length) {
+      for (const s of shifts) {
+        if (!s || !s.id) continue;
+        await pool.query(
+          `INSERT INTO bm_shifts(id,data) VALUES($1,$2) ON CONFLICT(id) DO NOTHING`,
+          [s.id, JSON.stringify(s)]
+        );
+      }
+    }
+    // Settings - store each key separately
+    if (settings && typeof settings === 'object') {
       for (const [key, data] of Object.entries(settings)) {
-        await pool.query(`INSERT INTO bm_settings(key,data) VALUES($1,$2) ON CONFLICT(key) DO UPDATE SET data=$2,updated_at=NOW()`, [key, data]);
+        if (data === undefined || data === null) continue;
+        await pool.query(
+          `INSERT INTO bm_settings(key,data) VALUES($1,$2) ON CONFLICT(key) DO UPDATE SET data=$2,updated_at=NOW()`,
+          [key, JSON.stringify(data)]
+        );
       }
     }
     res.json({ ok: true });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) {
+    console.error('POST /sync error:', e.message);
+    res.status(500).json({ error: e.message });
+  }
 });
 
-// ── FULL PULL (get everything from server) ──────────────────
+// FULL PULL
 app.get('/pull', async (req, res) => {
   try {
     const [bags, sales, shifts, settings] = await Promise.all([
@@ -172,10 +200,16 @@ app.get('/pull', async (req, res) => {
       shifts: shifts.rows.map(r => r.data),
       settings: settingsObj
     });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) {
+    console.error('GET /pull error:', e.message);
+    res.status(500).json({ error: e.message });
+  }
 });
 
 const PORT = process.env.PORT || 3000;
 initDB().then(() => {
   app.listen(PORT, () => console.log('Ball Mill server running on port', PORT));
+}).catch(e => {
+  console.error('Failed to init DB:', e.message);
+  process.exit(1);
 });
