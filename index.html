@@ -1,0 +1,2034 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0d1117">
+<title>GeT Ball Mill</title>
+<style>
+:root{
+  --gold:#f0a500;--gold2:#c47f00;--amber:#f59e0b;
+  --steel:#8ab4d4;--steel2:#4a7fa0;
+  --green:#10b981;--green-soft:rgba(16,185,129,0.12);
+  --red:#ef4444;--red-soft:rgba(239,68,68,0.12);
+  --pink:#e91e8c;
+  --navy:#0d1117;--navy2:#161b22;--navy3:#1c2128;
+  --surface:rgba(255,255,255,0.04);--surface2:rgba(255,255,255,0.07);
+  --border:rgba(255,255,255,0.08);--border2:rgba(255,255,255,0.12);
+  --white:#f0f4f8;--muted:#8892a4;
+  --font:'DM Sans',system-ui,sans-serif;
+  --radius:14px;--radius-sm:8px;--radius-xs:6px;
+  --safe-bot:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;overflow:hidden;background:var(--navy);color:var(--white);font-family:var(--font);}
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap');
+
+/* ── Layout ── */
+#app{display:flex;flex-direction:column;height:100dvh;}
+#topbar{background:var(--navy2);border-bottom:1px solid var(--border);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+#topbar-left{display:flex;align-items:center;gap:10px;}
+#logo{width:36px;height:36px;border-radius:8px;object-fit:contain;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:18px;}
+#app-title{font-size:15px;font-weight:700;color:var(--white);}
+#app-title span{color:var(--gold);}
+#topbar-right{display:flex;align-items:center;gap:8px;}
+#shift-badge{font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:rgba(240,165,0,0.15);color:var(--gold);border:1px solid rgba(240,165,0,0.3);}
+#clock{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;}
+
+#screen-container{flex:1;overflow:hidden;position:relative;}
+.screen{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;display:none;flex-direction:column;padding-bottom:calc(var(--safe-bot)+80px);}
+.screen.active{display:flex;}
+.screen-content{padding:16px;}
+.screen-title{font-size:22px;font-weight:800;margin-bottom:4px;}
+.screen-sub{font-size:13px;color:var(--muted);margin-bottom:16px;}
+
+/* ── Bottom nav ── */
+#bottom-nav{background:var(--navy2);border-top:1px solid var(--border);display:flex;padding:8px 4px calc(var(--safe-bot)+8px);flex-shrink:0;}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;cursor:pointer;padding:6px 2px;border-radius:8px;color:var(--muted);transition:color .15s;}
+.nav-btn.active{color:var(--gold);}
+.nav-btn svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+.nav-btn span{font-size:10px;font-weight:600;font-family:var(--font);}
+
+/* ── Cards ── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px;}
+.card-title{font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;}
+
+/* ── Home grid ── */
+.home-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+.home-tile{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:18px 14px;cursor:pointer;transition:all .15s;display:flex;flex-direction:column;gap:8px;}
+.home-tile:active{transform:scale(.97);}
+.home-tile.primary{background:linear-gradient(135deg,rgba(240,165,0,0.2),rgba(240,165,0,0.08));border-color:rgba(240,165,0,0.3);}
+.home-tile.secondary{background:linear-gradient(135deg,rgba(138,180,212,0.15),rgba(138,180,212,0.05));border-color:rgba(138,180,212,0.2);}
+.home-tile-icon{font-size:26px;}
+.home-tile-label{font-size:14px;font-weight:700;}
+.home-tile-sub{font-size:11px;color:var(--muted);}
+.shift-bar{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:12px;}
+.shift-bar-row{display:flex;align-items:center;justify-content:space-between;}
+.shift-bar-info{font-size:13px;font-weight:600;}
+.shift-bar-sub{font-size:11px;color:var(--muted);margin-top:2px;}
+.shift-btn{font-size:12px;font-weight:700;padding:7px 14px;border-radius:var(--radius-sm);border:none;cursor:pointer;font-family:var(--font);}
+.shift-btn.start{background:var(--green);color:#fff;}
+.shift-btn.end{background:var(--red);color:#fff;}
+.shift-btn.disabled{background:var(--surface2);color:var(--muted);cursor:default;}
+
+/* ── Forms ── */
+.fu-row{margin-bottom:12px;}
+.fu-row label{display:block;font-size:12px;color:var(--muted);font-weight:600;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.3px;}
+.fu-input,.fu-select,.fu-textarea{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--white);border-radius:var(--radius-sm);padding:12px 14px;font-family:var(--font);font-size:15px;outline:none;transition:border-color .15s;}
+.fu-input:focus,.fu-select:focus,.fu-textarea:focus{border-color:var(--gold);}
+.fu-select option{background:var(--navy2);}
+.fu-textarea{min-height:80px;resize:vertical;}
+.fu-big{font-size:18px;padding:16px;text-align:center;font-weight:700;}
+
+/* ── Buttons ── */
+.btn{width:100%;padding:15px;border-radius:var(--radius-sm);border:none;font-family:var(--font);font-size:16px;font-weight:700;cursor:pointer;transition:opacity .15s;margin-bottom:8px;}
+.btn:active{opacity:.8;}
+.btn-gold{background:var(--gold);color:#000;}
+.btn-steel{background:var(--steel2);color:#fff;}
+.btn-ghost{background:var(--surface2);color:var(--white);border:1px solid var(--border);}
+.btn-red{background:var(--red);color:#fff;}
+.btn-sm{padding:9px 16px;font-size:13px;width:auto;margin:0;}
+
+/* ── Chips ── */
+.chip-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;}
+.chip{padding:8px 14px;border-radius:20px;border:1px solid var(--border);background:var(--surface);font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;transition:all .15s;}
+.chip.active{background:rgba(240,165,0,0.15);border-color:rgba(240,165,0,0.4);color:var(--gold);}
+.chip.green{background:var(--green-soft);border-color:rgba(16,185,129,0.4);color:var(--green);}
+.chip.red{background:var(--red-soft);border-color:rgba(239,68,68,0.4);color:var(--red);}
+
+/* ── Big operator buttons ── */
+.op-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px;}
+.op-btn{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;font-size:14px;font-weight:700;color:var(--white);cursor:pointer;text-align:center;transition:all .15s;}
+.op-btn.active{background:rgba(240,165,0,0.15);border-color:rgba(240,165,0,0.5);color:var(--gold);}
+.op-btn:active{transform:scale(.96);}
+
+/* ── Chute buttons ── */
+.chute-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;}
+.chute-btn{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 6px;font-size:15px;font-weight:800;color:var(--white);cursor:pointer;text-align:center;transition:all .15s;}
+.chute-btn.active{background:rgba(240,165,0,0.2);border-color:var(--gold);color:var(--gold);}
+
+/* ── Stock tiles ── */
+.stock-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px;}
+.stock-tile{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;}
+.stock-tile-label{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.3px;margin-bottom:4px;}
+.stock-tile-val{font-size:22px;font-weight:800;color:var(--gold);}
+.stock-tile-unit{font-size:11px;color:var(--muted);}
+
+/* ── List entries ── */
+.list-entry{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;}
+.list-entry-left{flex:1;min-width:0;}
+.list-entry-title{font-size:14px;font-weight:700;}
+.list-entry-meta{font-size:11px;color:var(--muted);margin-top:2px;}
+.list-entry-right{display:flex;gap:6px;flex-shrink:0;}
+
+/* ── Badges ── */
+.badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;}
+.badge-gold{background:rgba(240,165,0,0.15);color:var(--gold);border:1px solid rgba(240,165,0,0.3);}
+.badge-green{background:var(--green-soft);color:var(--green);border:1px solid rgba(16,185,129,0.3);}
+.badge-red{background:var(--red-soft);color:var(--red);border:1px solid rgba(239,68,68,0.3);}
+.badge-steel{background:rgba(138,180,212,0.12);color:var(--steel);border:1px solid rgba(138,180,212,0.2);}
+
+/* ── Modal ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:100;display:none;align-items:flex-end;justify-content:center;}
+.overlay.open{display:flex;}
+.modal-sheet{background:var(--navy2);border-radius:20px 20px 0 0;width:100%;max-height:92dvh;overflow-y:auto;padding:20px 16px calc(var(--safe-bot)+20px);}
+.modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+.modal-title{font-size:17px;font-weight:800;}
+.modal-close{background:var(--surface);border:none;color:var(--muted);border-radius:50%;width:32px;height:32px;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+
+/* ── Section header ── */
+.sec-hdr{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin:16px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+
+/* ── QC buttons ── */
+.qc-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+.qc-btn{padding:20px;border-radius:var(--radius);border:2px solid var(--border);background:var(--surface);font-size:16px;font-weight:800;cursor:pointer;text-align:center;transition:all .15s;}
+.qc-btn.pass{border-color:var(--green);background:var(--green-soft);color:var(--green);}
+.qc-btn.fail{border-color:var(--red);background:var(--red-soft);color:var(--red);}
+
+/* ── Divider ── */
+.divider{height:1px;background:var(--border);margin:14px 0;}
+
+/* ── Stat row ── */
+.stat-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);}
+.stat-label{font-size:13px;color:var(--muted);}
+.stat-val{font-size:13px;font-weight:700;}
+
+/* ── Scrollable table ── */
+.tbl-wrap{overflow-x:auto;margin-bottom:12px;}
+table{width:100%;border-collapse:collapse;font-size:12px;}
+th{background:var(--surface2);color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.3px;padding:8px 10px;text-align:left;white-space:nowrap;}
+td{padding:8px 10px;border-bottom:1px solid var(--border);white-space:nowrap;}
+tr:last-child td{border-bottom:none;}
+
+/* ── Empty state ── */
+.empty{text-align:center;padding:40px 20px;color:var(--muted);font-size:14px;}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar{width:3px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- TOP BAR -->
+<div id="topbar">
+  <div id="topbar-left">
+    <div id="logo">⚙️</div>
+    <div>
+      <div id="app-title">GeT <span>Ball Mill</span></div>
+    </div>
+  </div>
+  <div id="topbar-right">
+    <div id="clock">--:--</div>
+    <div id="online-dot" style="width:8px;height:8px;border-radius:50%;background:var(--muted);flex-shrink:0;" title="Server status"></div>
+    <div id="shift-badge">Day Shift</div>
+  </div>
+</div>
+
+<!-- SCREEN CONTAINER -->
+<div id="screen-container">
+
+<!-- HOME -->
+<div class="screen active" id="screen-home">
+<div class="screen-content">
+  <div class="shift-bar" id="shift-bar">
+    <div class="shift-bar-row">
+      <div>
+        <div class="shift-bar-info" id="shift-bar-info">No active shift</div>
+        <div class="shift-bar-sub" id="shift-bar-sub">Tap Start Shift to begin</div>
+      </div>
+      <button class="shift-btn start" id="shift-toggle-btn" onclick="toggleShift()">Start Shift</button>
+    </div>
+    <div id="shift-crew-display" style="margin-top:10px;display:none;">
+      <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:5px;">ON SHIFT:</div>
+      <div id="shift-crew-names" style="font-size:13px;font-weight:600;"></div>
+    </div>
+  </div>
+
+  <div class="home-grid">
+    <div class="home-tile primary" onclick="showScreen('screen-production')">
+      <div class="home-tile-icon">⚙️</div>
+      <div class="home-tile-label">Production</div>
+      <div class="home-tile-sub">Submit bags & manage shift</div>
+    </div>
+    <div class="home-tile secondary" onclick="showScreen('screen-stock')">
+      <div class="home-tile-icon">📦</div>
+      <div class="home-tile-label">Stock</div>
+      <div class="home-tile-sub">Inventory overview</div>
+    </div>
+    <div class="home-tile secondary" onclick="showScreen('screen-sales')">
+      <div class="home-tile-icon">🚛</div>
+      <div class="home-tile-label">Sales</div>
+      <div class="home-tile-sub">Load trucks & delivery notes</div>
+    </div>
+    <div class="home-tile secondary" onclick="showScreen('screen-admin')">
+      <div class="home-tile-icon">🔧</div>
+      <div class="home-tile-label">Admin</div>
+      <div class="home-tile-sub">Operators, clients, products</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Today's Production</div>
+    <div id="home-today-stats">
+      <div class="stat-row"><span class="stat-label">Total bags</span><span class="stat-val" id="stat-bags-today">0</span></div>
+      <div class="stat-row"><span class="stat-label">Total weight</span><span class="stat-val" id="stat-weight-today">0 kg</span></div>
+      <div class="stat-row"><span class="stat-label">Active feed</span><span class="stat-val" id="stat-feed-today">—</span></div>
+    </div>
+  </div>
+
+  <button class="btn btn-ghost" onclick="showScreen('screen-reports')">📊 Reports & Shift Summary</button>
+  <div style="display:flex;gap:8px;margin-top:4px;">
+    <button class="btn btn-ghost" style="font-size:13px;" onclick="pullFromServer()">⬇ Pull from Server</button>
+    <button class="btn btn-ghost" style="font-size:13px;" onclick="syncToServer()">⬆ Push to Server</button>
+  </div>
+</div>
+</div>
+
+<!-- PRODUCTION -->
+<div class="screen" id="screen-production">
+<div class="screen-content">
+  <div class="screen-title">⚙️ Production</div>
+  <div class="screen-sub">Submit bags & view today's output</div>
+
+  <button class="btn btn-gold" onclick="openSubmitBag()">+ Submit Bag</button>
+  <button class="btn btn-ghost" onclick="openEndShiftReport()">📋 End of Shift Report</button>
+
+  <div class="sec-hdr">Today's Bags</div>
+  <div id="prod-bag-list"><div class="empty">No bags submitted yet today</div></div>
+</div>
+</div>
+
+<!-- STOCK -->
+<div class="screen" id="screen-stock">
+<div class="screen-content">
+  <div class="screen-title">📦 Stock</div>
+  <div class="screen-sub">Current inventory by chute & product</div>
+  <div id="stock-feed-filter" class="chip-row"></div>
+  <div id="stock-content"><div class="empty">No stock data yet</div></div>
+</div>
+</div>
+
+<!-- SALES -->
+<div class="screen" id="screen-sales">
+<div class="screen-content">
+  <div class="screen-title">🚛 Sales</div>
+  <div class="screen-sub">Register truck loads & delivery notes</div>
+  <button class="btn btn-gold" onclick="openRegisterSale()">+ Register Truck Load</button>
+  <div class="sec-hdr">Recent Sales</div>
+  <div id="sales-list"><div class="empty">No sales recorded yet</div></div>
+</div>
+</div>
+
+<!-- ADMIN -->
+<div class="screen" id="screen-admin">
+<div class="screen-content">
+  <div class="screen-title">🔧 Admin</div>
+  <div class="screen-sub">Manage operators, clients & products</div>
+  <div class="home-grid">
+    <div class="home-tile primary" onclick="showAdminSection('operators')">
+      <div class="home-tile-icon">👷</div>
+      <div class="home-tile-label">Operators</div>
+    </div>
+    <div class="home-tile secondary" onclick="showAdminSection('clients')">
+      <div class="home-tile-icon">🏢</div>
+      <div class="home-tile-label">Clients</div>
+    </div>
+    <div class="home-tile secondary" onclick="showAdminSection('feedmaterials')">
+      <div class="home-tile-icon">🪨</div>
+      <div class="home-tile-label">Feed Materials</div>
+    </div>
+    <div class="home-tile secondary" onclick="showAdminSection('products')">
+      <div class="home-tile-icon">🏷️</div>
+      <div class="home-tile-label">Products</div>
+    </div>
+    <div class="home-tile secondary" onclick="showServerSettings()">
+      <div class="home-tile-icon">🌐</div>
+      <div class="home-tile-label">Server</div>
+    </div>
+  </div>
+  <div id="admin-section-content"></div>
+</div>
+</div>
+
+<!-- REPORTS -->
+<div class="screen" id="screen-reports">
+<div class="screen-content">
+  <div class="screen-title">📊 Reports</div>
+  <div class="screen-sub">Shift summaries & monthly reports</div>
+  <div class="fu-row"><label>Select Date</label><input type="date" class="fu-input" id="report-date-pick"></div>
+  <div class="fu-row"><label>Shift</label>
+    <div class="chip-row">
+      <div class="chip active" id="rpt-day" onclick="selReportShift('day',this)">Day Shift</div>
+      <div class="chip" id="rpt-night" onclick="selReportShift('night',this)">Night Shift</div>
+    </div>
+  </div>
+  <button class="btn btn-gold" onclick="generateShiftReport()">Generate Shift Report</button>
+  <button class="btn btn-ghost" onclick="generateMonthlyReport()">📅 Monthly Summary</button>
+  <div id="report-output" style="margin-top:12px;"></div>
+</div>
+</div>
+
+<!-- EDIT -->
+<div class="screen" id="screen-edit">
+<div class="screen-content">
+  <div class="screen-title">✏️ Edit Records</div>
+  <div class="screen-sub">Correct bag data</div>
+  <div class="fu-row"><label>Filter by date</label><input type="date" class="fu-input" id="edit-date-filter" oninput="loadEditList()"></div>
+  <div id="edit-bag-list"><div class="empty">Select a date to view bags</div></div>
+</div>
+</div>
+
+</div><!-- /screen-container -->
+
+<!-- BOTTOM NAV -->
+<div id="bottom-nav">
+  <button class="nav-btn active" id="nav-home" onclick="showScreen('screen-home')">
+    <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    <span>Home</span>
+  </button>
+  <button class="nav-btn" id="nav-production" onclick="showScreen('screen-production')">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/></svg>
+    <span>Production</span>
+  </button>
+  <button class="nav-btn" id="nav-stock" onclick="showScreen('screen-stock')">
+    <svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
+    <span>Stock</span>
+  </button>
+  <button class="nav-btn" id="nav-sales" onclick="showScreen('screen-sales')">
+    <svg viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+    <span>Sales</span>
+  </button>
+  <button class="nav-btn" id="nav-admin" onclick="showScreen('screen-admin')">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+    <span>Admin</span>
+  </button>
+  <button class="nav-btn" id="nav-edit" onclick="showScreen('screen-edit')">
+    <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+    <span>Edit</span>
+  </button>
+</div>
+
+</div><!-- /app -->
+
+<!-- OVERLAYS -->
+<div class="overlay" id="overlay-submit-bag">
+  <div class="modal-sheet" id="modal-submit-bag">
+    <div class="modal-header">
+      <div class="modal-title">Submit Bag</div>
+      <button class="modal-close" id="close-submit-bag">✕</button>
+    </div>
+    <div id="submit-bag-body"></div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay-start-shift">
+  <div class="modal-sheet">
+    <div class="modal-header">
+      <div class="modal-title">Start Shift</div>
+      <button class="modal-close" id="close-start-shift">✕</button>
+    </div>
+    <div id="start-shift-body"></div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay-register-sale">
+  <div class="modal-sheet">
+    <div class="modal-header">
+      <div class="modal-title">Register Truck Load</div>
+      <button class="modal-close" id="close-register-sale">✕</button>
+    </div>
+    <div id="register-sale-body"></div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay-admin-form">
+  <div class="modal-sheet">
+    <div class="modal-header">
+      <div class="modal-title" id="admin-form-title">Add</div>
+      <button class="modal-close" id="close-admin-form">✕</button>
+    </div>
+    <div id="admin-form-body"></div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay-shift-report">
+  <div class="modal-sheet">
+    <div class="modal-header">
+      <div class="modal-title">Shift Report</div>
+      <button class="modal-close" id="close-shift-report">✕</button>
+    </div>
+    <div id="shift-report-body"></div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay-edit-bag">
+  <div class="modal-sheet">
+    <div class="modal-header">
+      <div class="modal-title">Edit Bag Record</div>
+      <button class="modal-close" id="close-edit-bag">✕</button>
+    </div>
+    <div id="edit-bag-body"></div>
+  </div>
+</div>
+
+<script>
+// ════════════ DB ════════════
+const DB_KEY='bm_db_v1',SK='bm_settings_v1';
+function getDB(){try{return JSON.parse(localStorage.getItem(DB_KEY)||'{"bags":[],"sales":[],"shifts":[]}')}catch(e){return{bags:[],sales:[],shifts:[]};}}
+function saveDB(db){localStorage.setItem(DB_KEY,JSON.stringify(db));}
+function getSettings(){try{return JSON.parse(localStorage.getItem(SK)||'{"operators":[],"clients":[],"feedMaterials":[],"products":[],"chuteMap":{}}');}catch(e){return{operators:[],clients:[],feedMaterials:[],products:[],chuteMap:{}};}}
+function saveSettings(s){localStorage.setItem(SK,JSON.stringify(s));}
+function getOperators(){return getSettings().operators||[];}
+function getClients(){return getSettings().clients||[];}
+function getFeedMaterials(){return getSettings().feedMaterials||[];}
+function getProducts(){return getSettings().products||[];}
+function getChuteMap(){return getSettings().chuteMap||{};}
+function genId(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+
+// ════════════ CLOCK & SHIFT ════════════
+function getShift(){const h=new Date().getHours();return h>=7&&h<19?'day':'night';}
+function updateClock(){
+  const now=new Date();
+  document.getElementById('clock').textContent=now.toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'});
+  const sh=getShift();
+  document.getElementById('shift-badge').textContent=sh==='day'?'Day Shift':'Night Shift';
+}
+setInterval(updateClock,1000);updateClock();
+
+// ════════════ ACTIVE SHIFT ════════════
+let _activeShift=null;
+function getActiveShift(){if(!_activeShift){const s=sessionStorage.getItem('bm_active_shift');if(s)_activeShift=JSON.parse(s);}return _activeShift;}
+function setActiveShift(s){_activeShift=s;sessionStorage.setItem('bm_active_shift',s?JSON.stringify(s):'null');}
+
+function toggleShift(){
+  const active=getActiveShift();
+  if(active){endShift();}
+  else{openStartShift();}
+}
+
+function updateShiftBar(){
+  const active=getActiveShift();
+  const btn=document.getElementById('shift-toggle-btn');
+  const info=document.getElementById('shift-bar-info');
+  const sub=document.getElementById('shift-bar-sub');
+  const crewDisplay=document.getElementById('shift-crew-display');
+  const crewNames=document.getElementById('shift-crew-names');
+  if(active){
+    const elapsed=Math.floor((Date.now()-active.startTime)/60000);
+    const h=Math.floor(elapsed/60),m=elapsed%60;
+    info.textContent=(active.shiftType==='day'?'☀️ Day':'🌙 Night')+' Shift — Active';
+    sub.textContent='Started '+new Date(active.startTime).toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'})+' · '+(h>0?h+'h ':'')+m+'m elapsed';
+    btn.textContent='End Shift';btn.className='shift-btn end';
+    if(active.crew&&active.crew.length>0){crewDisplay.style.display='block';crewNames.textContent=active.crew.join(', ');}
+  } else {
+    info.textContent='No active shift';sub.textContent='Tap Start Shift to begin';
+    btn.textContent='Start Shift';btn.className='shift-btn start';
+    crewDisplay.style.display='none';
+  }
+}
+setInterval(updateShiftBar,30000);
+
+// ════════════ START SHIFT ════════════
+function openStartShift(){
+  const ops=getOperators();
+  const body=document.getElementById('start-shift-body');
+  body.innerHTML='';
+  // Shift type
+  const shRow=document.createElement('div');shRow.className='fu-row';
+  const shL=document.createElement('label');shL.textContent='Shift Type';shRow.appendChild(shL);
+  const shD=document.createElement('div');shD.className='chip-row';
+  const sh=getShift();
+  ['day','night'].forEach(function(s){
+    const c=document.createElement('div');c.className='chip'+(s===sh?' active':'');c.textContent=s==='day'?'☀️ Day Shift':'🌙 Night Shift';
+    c.addEventListener('click',function(){shD.querySelectorAll('.chip').forEach(function(x){x.classList.remove('active');});c.classList.add('active');window._ssShift=s;});
+    shD.appendChild(c);
+  });
+  window._ssShift=sh;
+  shRow.appendChild(shD);body.appendChild(shRow);
+  // Crew
+  const crewRow=document.createElement('div');crewRow.className='fu-row';
+  const crewL=document.createElement('label');crewL.textContent='Select Crew (tap to add)';crewRow.appendChild(crewL);
+  window._ssCrew=[];
+  if(ops.length===0){
+    const note=document.createElement('div');note.style.cssText='font-size:13px;color:var(--muted);padding:10px 0;';note.textContent='No operators registered. Add operators in Admin first.';crewRow.appendChild(note);
+  } else {
+    const grid=document.createElement('div');grid.className='op-grid';
+    ops.forEach(function(op){
+      const btn=document.createElement('button');btn.className='op-btn';btn.textContent=op.name;
+      btn.addEventListener('click',function(){
+        const idx=window._ssCrew.indexOf(op.name);
+        if(idx>=0){window._ssCrew.splice(idx,1);btn.classList.remove('active');}
+        else{window._ssCrew.push(op.name);btn.classList.add('active');}
+      });
+      grid.appendChild(btn);
+    });
+    crewRow.appendChild(grid);
+  }
+  body.appendChild(crewRow);
+  // Feed material
+  const fms=getFeedMaterials();
+  const fmRow=document.createElement('div');fmRow.className='fu-row';
+  const fmL=document.createElement('label');fmL.textContent='Feed Material Being Processed';fmRow.appendChild(fmL);
+  const fmSel=document.createElement('select');fmSel.className='fu-select';fmSel.id='ss-feed';
+  const fmBlank=document.createElement('option');fmBlank.value='';fmBlank.textContent='— select —';fmSel.appendChild(fmBlank);
+  fms.forEach(function(fm){const o=document.createElement('option');o.value=fm.id;o.textContent=fm.name;fmSel.appendChild(o);});
+  fmRow.appendChild(fmSel);body.appendChild(fmRow);
+  // Notes
+  const notesRow=document.createElement('div');notesRow.className='fu-row';
+  const notesL=document.createElement('label');notesL.textContent='Handover Notes (optional)';notesRow.appendChild(notesL);
+  const notesTA=document.createElement('textarea');notesTA.className='fu-textarea';notesTA.id='ss-notes';notesTA.placeholder='Any notes from previous shift...';notesRow.appendChild(notesTA);
+  body.appendChild(notesRow);
+  // Button
+  const btn=document.createElement('button');btn.className='btn btn-gold';btn.textContent='Start Shift';
+  btn.addEventListener('click',function(){
+    const feedId=document.getElementById('ss-feed').value;
+    const notes=document.getElementById('ss-notes').value.trim();
+    const shift={id:genId(),startTime:Date.now(),shiftType:window._ssShift,crew:window._ssCrew,feedId:feedId,notes:notes,bags:[]};
+    setActiveShift(shift);
+    closeOverlay('overlay-start-shift');
+    updateShiftBar();
+    updateHomeStats();
+  });
+  body.appendChild(btn);
+  openOverlay('overlay-start-shift');
+}
+
+function endShift(){
+  const active=getActiveShift();
+  if(!active)return;
+  if(!confirm('End current shift? This will save the shift record.'))return;
+  active.endTime=Date.now();
+  const db=getDB();
+  if(!db.shifts)db.shifts=[];
+  db.shifts.push(active);
+  saveDB(db);
+  setActiveShift(null);
+  updateShiftBar();
+  openEndShiftReport(active);
+}
+
+// ════════════ SUBMIT BAG ════════════
+let _bagStep=0;let _bagData={};
+function openSubmitBag(){
+  const active=getActiveShift();
+  _bagStep=0;_bagData={};
+  _bagData.feedId=active?active.feedId:'';
+  renderBagStep();
+  openOverlay('overlay-submit-bag');
+}
+
+function renderBagStep(){
+  const body=document.getElementById('submit-bag-body');
+  body.innerHTML='';
+  const steps=['Feed Material','Chute','Operator','Weight','Quality Check'];
+  // Step indicator
+  const stepInd=document.createElement('div');
+  stepInd.style.cssText='display:flex;gap:4px;margin-bottom:16px;';
+  steps.forEach(function(s,i){
+    const dot=document.createElement('div');
+    dot.style.cssText='flex:1;height:3px;border-radius:2px;background:'+(i<=_bagStep?'var(--gold)':'var(--border)');
+    stepInd.appendChild(dot);
+  });
+  body.appendChild(stepInd);
+
+  const title=document.createElement('div');
+  title.style.cssText='font-size:18px;font-weight:800;margin-bottom:14px;';
+  title.textContent=steps[_bagStep];
+  body.appendChild(title);
+
+  if(_bagStep===0){
+    // Feed material
+    const fms=getFeedMaterials();
+    if(fms.length===0){
+      const note=document.createElement('div');note.style.cssText='font-size:14px;color:var(--muted);margin-bottom:12px;';note.textContent='No feed materials registered. Go to Admin → Feed Materials first.';body.appendChild(note);
+    }
+    fms.forEach(function(fm){
+      const btn=document.createElement('button');btn.className='op-btn'+(fm.id===_bagData.feedId?' active':'');
+      btn.style.cssText='width:100%;padding:18px;font-size:16px;margin-bottom:8px;';
+      btn.textContent=fm.name;
+      btn.addEventListener('click',function(){_bagData.feedId=fm.id;_bagData.feedName=fm.name;_bagStep=1;renderBagStep();});
+      body.appendChild(btn);
+    });
+
+  } else if(_bagStep===1){
+    // Chute selection
+    const chuteMap=getChuteMap();
+    const feedId=_bagData.feedId;
+    const chutes=['1','2','3','4','5','6','BH1','BH2'];
+    const grid=document.createElement('div');grid.className='chute-grid';
+    chutes.forEach(function(c){
+      const cKey=feedId+'_'+c;
+      const prodName=chuteMap[cKey]?chuteMap[cKey].productName:'';
+      const btn=document.createElement('button');btn.className='chute-btn'+(c===_bagData.chute?' active':'');
+      btn.innerHTML='<div style="font-size:16px;font-weight:800;">'+c+'</div>'+(prodName?'<div style="font-size:9px;color:var(--muted);margin-top:2px;">'+prodName+'</div>':'');
+      btn.addEventListener('click',function(){
+        _bagData.chute=c;
+        const cKey2=feedId+'_'+c;
+        _bagData.productId=chuteMap[cKey2]?chuteMap[cKey2].productId:'';
+        _bagData.productName=chuteMap[cKey2]?chuteMap[cKey2].productName:'';
+        _bagStep=2;renderBagStep();
+      });
+      grid.appendChild(btn);
+    });
+    body.appendChild(grid);
+    addBackBtn(body);
+
+  } else if(_bagStep===2){
+    // Operator
+    const ops=getOperators();
+    const grid=document.createElement('div');grid.className='op-grid';
+    ops.forEach(function(op){
+      const btn=document.createElement('button');btn.className='op-btn'+(op.name===_bagData.operator?' active':'');
+      btn.textContent=op.name;
+      btn.addEventListener('click',function(){_bagData.operator=op.name;_bagStep=3;renderBagStep();});
+      grid.appendChild(btn);
+    });
+    body.appendChild(grid);
+    // Manual name
+    const manRow=document.createElement('div');manRow.className='fu-row';
+    const manL=document.createElement('label');manL.textContent='Or type name';manRow.appendChild(manL);
+    const manI=document.createElement('input');manI.className='fu-input fu-big';manI.placeholder='Name...';manI.value=_bagData.operator||'';
+    const manBtn=document.createElement('button');manBtn.className='btn btn-ghost btn-sm';manBtn.style.marginTop='6px';manBtn.textContent='Use this name';
+    manBtn.addEventListener('click',function(){if(manI.value.trim()){_bagData.operator=manI.value.trim();_bagStep=3;renderBagStep();}});
+    manRow.appendChild(manI);manRow.appendChild(manBtn);body.appendChild(manRow);
+    addBackBtn(body);
+
+  } else if(_bagStep===3){
+    // Weight
+    const wRow=document.createElement('div');wRow.className='fu-row';
+    const wL=document.createElement('label');wL.textContent='Weight (kg)';wRow.appendChild(wL);
+    const wI=document.createElement('input');wI.type='number';wI.className='fu-input fu-big';wI.placeholder='0.0';wI.value=_bagData.weight||'';wI.inputMode='decimal';
+    wI.addEventListener('input',function(){_bagData.weight=parseFloat(this.value)||0;});
+    wRow.appendChild(wI);body.appendChild(wRow);
+    const tagRow=document.createElement('div');tagRow.className='fu-row';
+    const tagL=document.createElement('label');tagL.textContent='Tag/Bag Number (optional)';tagRow.appendChild(tagL);
+    const tagI=document.createElement('input');tagI.className='fu-input';tagI.placeholder='e.g. 001';tagI.value=_bagData.tagNum||'';
+    tagI.addEventListener('input',function(){_bagData.tagNum=this.value;});
+    tagRow.appendChild(tagI);body.appendChild(tagRow);
+    const nextBtn=document.createElement('button');nextBtn.className='btn btn-gold';nextBtn.textContent='Next →';
+    nextBtn.addEventListener('click',function(){
+      if(!_bagData.weight||_bagData.weight<=0){alert('Please enter a valid weight.');return;}
+      _bagStep=4;renderBagStep();
+    });
+    body.appendChild(nextBtn);
+    addBackBtn(body);
+
+  } else if(_bagStep===4){
+    // Quality check
+    const summary=document.createElement('div');summary.className='card';
+    summary.style.marginBottom='14px';
+    summary.innerHTML='<div class="card-title">Bag Summary</div>'
+      +'<div class="stat-row"><span class="stat-label">Feed</span><span class="stat-val">'+(_bagData.feedName||'—')+'</span></div>'
+      +'<div class="stat-row"><span class="stat-label">Chute</span><span class="stat-val">'+(_bagData.chute||'—')+'</span></div>'
+      +'<div class="stat-row"><span class="stat-label">Product</span><span class="stat-val">'+(_bagData.productName||'—')+'</span></div>'
+      +'<div class="stat-row"><span class="stat-label">Operator</span><span class="stat-val">'+(_bagData.operator||'—')+'</span></div>'
+      +'<div class="stat-row"><span class="stat-label">Weight</span><span class="stat-val">'+(_bagData.weight||0)+' kg</span></div>';
+    body.appendChild(summary);
+
+    const qcTitle=document.createElement('div');qcTitle.style.cssText='font-size:14px;font-weight:700;margin-bottom:10px;';qcTitle.textContent='Quality Check — Is material acceptable?';body.appendChild(qcTitle);
+    const qcRow=document.createElement('div');qcRow.className='qc-row';
+    const passBtn=document.createElement('button');passBtn.className='qc-btn pass';passBtn.innerHTML='✅<br>PASS<br><span style="font-size:12px;font-weight:400;">Add to stock</span>';
+    const failBtn=document.createElement('button');failBtn.className='qc-btn fail';failBtn.innerHTML='❌<br>REJECT<br><span style="font-size:12px;font-weight:400;">Queue for reprocess</span>';
+    passBtn.addEventListener('click',function(){submitBag('pass');});
+    failBtn.addEventListener('click',function(){submitBag('reject');});
+    qcRow.appendChild(passBtn);qcRow.appendChild(failBtn);body.appendChild(qcRow);
+    addBackBtn(body);
+  }
+}
+
+function addBackBtn(body){
+  const btn=document.createElement('button');btn.className='btn btn-ghost';btn.style.marginTop='4px';btn.textContent='← Back';
+  btn.addEventListener('click',function(){_bagStep=Math.max(0,_bagStep-1);renderBagStep();});
+  body.appendChild(btn);
+}
+
+function submitBag(qc){
+  const now=new Date();
+  const bag={
+    id:genId(),
+    timestamp:now.toISOString(),
+    date:now.toLocaleDateString('en-CA'),
+    time:now.toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'}),
+    feedId:_bagData.feedId,feedName:_bagData.feedName,
+    chute:_bagData.chute,
+    productId:_bagData.productId,productName:_bagData.productName,
+    operator:_bagData.operator,
+    weight:_bagData.weight,
+    tagNum:_bagData.tagNum||'',
+    qc:qc,
+    shift:getShift(),
+    shiftId:getActiveShift()?getActiveShift().id:null
+  };
+  const db=getDB();
+  db.bags.push(bag);
+  saveDB(db);
+  // Add to active shift
+  const active=getActiveShift();
+  if(active){active.bags=active.bags||[];active.bags.push(bag.id);setActiveShift(active);}
+  closeOverlay('overlay-submit-bag');
+  updateHomeStats();
+  renderProdBagList();
+  // Auto-sync to server
+  if(getServerUrl()) syncToServer();
+  // Feedback
+  const msg=document.createElement('div');
+  msg.style.cssText='position:fixed;top:80px;left:50%;transform:translateX(-50%);background:'+(qc==='pass'?'var(--green)':'var(--amber)')+';color:#fff;padding:10px 20px;border-radius:20px;font-weight:700;font-size:14px;z-index:999;';
+  msg.textContent=qc==='pass'?'✅ Bag added to stock':'⚠️ Bag queued for reprocessing';
+  document.body.appendChild(msg);
+  setTimeout(function(){msg.remove();},2500);
+}
+
+// ════════════ HOME STATS ════════════
+function updateHomeStats(){
+  const db=getDB();
+  const today=new Date().toLocaleDateString('en-CA');
+  const todayBags=db.bags.filter(function(b){return b.date===today&&b.qc==='pass';});
+  const totalWeight=todayBags.reduce(function(s,b){return s+b.weight;},0);
+  const active=getActiveShift();
+  document.getElementById('stat-bags-today').textContent=todayBags.length;
+  document.getElementById('stat-weight-today').textContent=totalWeight.toLocaleString()+' kg';
+  document.getElementById('stat-feed-today').textContent=active&&active.feedId?getFeedMaterials().find(function(f){return f.id===active.feedId;})?getFeedMaterials().find(function(f){return f.id===active.feedId;}).name:'—':'—';
+  updateShiftBar();
+}
+
+// ════════════ PRODUCTION LIST ════════════
+function renderProdBagList(){
+  const db=getDB();
+  const today=new Date().toLocaleDateString('en-CA');
+  const bags=db.bags.filter(function(b){return b.date===today;}).reverse();
+  const el=document.getElementById('prod-bag-list');if(!el)return;
+  el.innerHTML='';
+  if(!bags.length){el.innerHTML='<div class="empty">No bags submitted today</div>';return;}
+  bags.forEach(function(b){
+    const entry=document.createElement('div');entry.className='list-entry';
+    const left=document.createElement('div');left.className='list-entry-left';
+    const title=document.createElement('div');title.className='list-entry-title';
+    title.textContent='Chute '+b.chute+' · '+(b.productName||'—')+' · '+b.weight+' kg';
+    const meta=document.createElement('div');meta.className='list-entry-meta';
+    meta.textContent=b.time+' · '+b.operator+' · '+(b.tagNum?'Tag: '+b.tagNum+' · ':'')+b.feedName;
+    left.appendChild(title);left.appendChild(meta);
+    const right=document.createElement('div');right.className='list-entry-right';
+    const badge=document.createElement('span');badge.className='badge '+(b.qc==='pass'?'badge-green':'badge-red');
+    badge.textContent=b.qc==='pass'?'STOCK':'REJECT';
+    right.appendChild(badge);
+    entry.appendChild(left);entry.appendChild(right);
+    el.appendChild(entry);
+  });
+}
+
+// ════════════ STOCK ════════════
+function renderStock(){
+  const db=getDB();
+  const settings=getSettings();
+  const fms=settings.feedMaterials||[];
+  const chuteMap=settings.chuteMap||{};
+  const filterEl=document.getElementById('stock-feed-filter');
+  const contentEl=document.getElementById('stock-content');
+  filterEl.innerHTML='';contentEl.innerHTML='';
+  if(!fms.length){contentEl.innerHTML='<div class="empty">No feed materials registered yet</div>';return;}
+  let activeFeed=window._stockFeed||fms[0].id;
+  fms.forEach(function(fm){
+    const chip=document.createElement('div');chip.className='chip'+(fm.id===activeFeed?' active':'');
+    chip.textContent=fm.name;
+    chip.addEventListener('click',function(){window._stockFeed=fm.id;renderStock();});
+    filterEl.appendChild(chip);
+  });
+  const chutes=['1','2','3','4','5','6','BH1','BH2'];
+  const bags=db.bags.filter(function(b){return (b.feedId===activeFeed||b.isSeeded||b.isOpeningStock)&&b.qc==='pass';});
+  // Deduct sold bags
+  const soldBagIds=new Set();
+  (db.sales||[]).forEach(function(s){(s.bagIds||[]).forEach(function(id){soldBagIds.add(id);});});
+  const stockBags=bags.filter(function(b){return !soldBagIds.has(b.id);});
+  // By chute
+  const chuteTitle=document.createElement('div');chuteTitle.className='sec-hdr';chuteTitle.textContent='Stock by Chute';contentEl.appendChild(chuteTitle);
+  const grid=document.createElement('div');grid.className='stock-grid';
+  chutes.forEach(function(c){
+    const cBags=stockBags.filter(function(b){return b.chute===c;});
+    const cWeight=cBags.reduce(function(s,b){return s+b.weight;},0);
+    const cKey=activeFeed+'_'+c;
+    const prodName=chuteMap[cKey]?chuteMap[cKey].productName:'—';
+    const tile=document.createElement('div');tile.className='stock-tile';
+    tile.innerHTML='<div class="stock-tile-label">Chute '+c+' · '+prodName+'</div>'
+      +'<div class="stock-tile-val">'+cWeight.toLocaleString()+'</div>'
+      +'<div class="stock-tile-unit">kg · '+cBags.length+' bags</div>';
+    grid.appendChild(tile);
+  });
+  contentEl.appendChild(grid);
+  // By product
+  const prodTitle=document.createElement('div');prodTitle.className='sec-hdr';prodTitle.textContent='Stock by Product';contentEl.appendChild(prodTitle);
+  const prodMap={};
+  stockBags.forEach(function(b){
+    const k=b.productName||'Unknown';
+    if(!prodMap[k])prodMap[k]={weight:0,bags:0};
+    prodMap[k].weight+=b.weight;prodMap[k].bags++;
+  });
+  const prodGrid=document.createElement('div');prodGrid.className='stock-grid';
+  Object.keys(prodMap).forEach(function(k){
+    const tile=document.createElement('div');tile.className='stock-tile';
+    tile.innerHTML='<div class="stock-tile-label">'+k+'</div>'
+      +'<div class="stock-tile-val">'+prodMap[k].weight.toLocaleString()+'</div>'
+      +'<div class="stock-tile-unit">kg · '+prodMap[k].bags+' bags</div>';
+    prodGrid.appendChild(tile);
+  });
+  if(!Object.keys(prodMap).length){const empty=document.createElement('div');empty.className='empty';empty.textContent='No stock on hand';contentEl.appendChild(empty);}
+  else contentEl.appendChild(prodGrid);
+  // Reprocess queue
+  const rejectBags=bags.filter(function(b){return b.qc==='reject';});
+  if(rejectBags.length){
+    const rejTitle=document.createElement('div');rejTitle.className='sec-hdr';rejTitle.style.color='var(--amber)';rejTitle.textContent='⚠ Reprocess Queue ('+rejectBags.length+' bags)';contentEl.appendChild(rejTitle);
+    const rejGrid=document.createElement('div');rejGrid.className='stock-grid';
+    const rejWeight=rejectBags.reduce(function(s,b){return s+b.weight;},0);
+    const tile=document.createElement('div');tile.className='stock-tile';tile.style.borderColor='rgba(245,158,11,0.3)';
+    tile.innerHTML='<div class="stock-tile-label">Rejected Material</div><div class="stock-tile-val" style="color:var(--amber)">'+rejWeight.toLocaleString()+'</div><div class="stock-tile-unit">kg · '+rejectBags.length+' bags</div>';
+    rejGrid.appendChild(tile);contentEl.appendChild(rejGrid);
+  }
+}
+
+// ════════════ SALES ════════════
+function openRegisterSale(){
+  const db=getDB();
+  const clients=getClients();
+  const fms=getFeedMaterials();
+  const body=document.getElementById('register-sale-body');
+  body.innerHTML='';
+  window._saleData={bagIds:[],lines:[]};
+
+  // Client
+  const cRow=document.createElement('div');cRow.className='fu-row';
+  const cL=document.createElement('label');cL.textContent='Client';cRow.appendChild(cL);
+  const cSel=document.createElement('select');cSel.className='fu-select';cSel.id='sale-client';
+  const cB=document.createElement('option');cB.value='';cB.textContent='— select —';cSel.appendChild(cB);
+  clients.forEach(function(c){const o=document.createElement('option');o.value=c.id;o.textContent=c.name;cSel.appendChild(o);});
+  cRow.appendChild(cSel);body.appendChild(cRow);
+
+  // Destination
+  const dRow=document.createElement('div');dRow.className='fu-row';
+  const dL=document.createElement('label');dL.textContent='Destination / Delivery Address';dRow.appendChild(dL);
+  const dI=document.createElement('input');dI.className='fu-input';dI.id='sale-destination';dI.placeholder='e.g. Cape Town Smelter';dRow.appendChild(dI);body.appendChild(dRow);
+
+  // Truck reg
+  const tRow=document.createElement('div');tRow.className='fu-row';
+  const tL=document.createElement('label');tL.textContent='Truck Registration';tRow.appendChild(tL);
+  const tI=document.createElement('input');tI.className='fu-input';tI.id='sale-truck';tI.placeholder='e.g. CA 123-456';tRow.appendChild(tI);body.appendChild(tRow);
+
+  // Driver
+  const drRow=document.createElement('div');drRow.className='fu-row';
+  const drL=document.createElement('label');drL.textContent='Driver Name';drRow.appendChild(drL);
+  const drI=document.createElement('input');drI.className='fu-input';drI.id='sale-driver';drI.placeholder='Driver name';drRow.appendChild(drI);body.appendChild(drRow);
+
+  // Loading supervisor
+  const ops=getOperators();
+  const supRow=document.createElement('div');supRow.className='fu-row';
+  const supL=document.createElement('label');supL.textContent='Loading Supervisor';supRow.appendChild(supL);
+  const supSel=document.createElement('select');supSel.className='fu-select';supSel.id='sale-supervisor';
+  const supB=document.createElement('option');supB.value='';supB.textContent='— select —';supSel.appendChild(supB);
+  ops.forEach(function(op){const o=document.createElement('option');o.value=op.name;o.textContent=op.name+' ('+op.position+')';supSel.appendChild(o);});
+  supRow.appendChild(supSel);body.appendChild(supRow);
+
+  // Date
+  const dateRow=document.createElement('div');dateRow.className='fu-row';
+  const dateL=document.createElement('label');dateL.textContent='Load Date';dateRow.appendChild(dateL);
+  const dateI=document.createElement('input');dateI.type='date';dateI.className='fu-input';dateI.id='sale-date';dateI.value=new Date().toLocaleDateString('en-CA');dateRow.appendChild(dateI);body.appendChild(dateRow);
+
+  // Products / bags
+  const bagTitle=document.createElement('div');bagTitle.className='sec-hdr';bagTitle.textContent='Add Product Lines';body.appendChild(bagTitle);
+
+  // Stock on hand summary
+  const soldBagIds=new Set();
+  (db.sales||[]).forEach(function(s){(s.bagIds||[]).forEach(function(id){soldBagIds.add(id);});});
+  const availBags=db.bags.filter(function(b){return b.qc==='pass'&&!soldBagIds.has(b.id);});
+  
+  // Group by product
+  const prodMap={};
+  availBags.forEach(function(b){
+    const k=(b.productName||'Unknown')+'|'+(b.feedName||'');
+    if(!prodMap[k])prodMap[k]={productName:b.productName||'Unknown',feedName:b.feedName||'',bags:[],weight:0};
+    prodMap[k].bags.push(b.id);prodMap[k].weight+=b.weight;
+  });
+
+  const linesContainer=document.createElement('div');linesContainer.id='sale-lines-container';body.appendChild(linesContainer);
+
+  Object.keys(prodMap).forEach(function(k){
+    const p=prodMap[k];
+    const row=document.createElement('div');row.className='card';row.style.marginBottom='8px';
+    const hdr=document.createElement('div');hdr.style.cssText='display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;';
+    const info=document.createElement('div');
+    info.innerHTML='<div style="font-size:14px;font-weight:700;">'+p.productName+'</div><div style="font-size:11px;color:var(--muted);">'+p.feedName+' · Available: '+p.weight.toLocaleString()+' kg ('+p.bags.length+' bags)</div>';
+    hdr.appendChild(info);row.appendChild(hdr);
+    const wRow=document.createElement('div');wRow.className='fu-row';wRow.style.margin='0';
+    const wL=document.createElement('label');wL.textContent='Weight to load (kg) — 0 to skip';wRow.appendChild(wL);
+    const wI=document.createElement('input');wI.type='number';wI.className='fu-input';wI.placeholder='0';wI.dataset.product=p.productName;wI.dataset.feed=p.feedName;wI.dataset.available=p.weight;wI.dataset.bagids=JSON.stringify(p.bags);
+    wRow.appendChild(wI);row.appendChild(wRow);
+    linesContainer.appendChild(row);
+  });
+
+  if(!Object.keys(prodMap).length){
+    const empty=document.createElement('div');empty.className='empty';empty.textContent='No stock available to sell';body.appendChild(empty);
+  }
+
+  // Notes
+  const noteRow=document.createElement('div');noteRow.className='fu-row';
+  const noteL=document.createElement('label');noteL.textContent='Notes';noteRow.appendChild(noteL);
+  const noteTA=document.createElement('textarea');noteTA.className='fu-textarea';noteTA.id='sale-notes';noteTA.placeholder='Any additional notes...';noteRow.appendChild(noteTA);body.appendChild(noteRow);
+
+  const submitBtn=document.createElement('button');submitBtn.className='btn btn-gold';submitBtn.textContent='Register Sale & Generate Delivery Note';
+  submitBtn.addEventListener('click',submitSale);body.appendChild(submitBtn);
+
+  openOverlay('overlay-register-sale');
+}
+
+function submitSale(){
+  const clientId=document.getElementById('sale-client').value;
+  const destination=document.getElementById('sale-destination').value.trim();
+  const truck=document.getElementById('sale-truck').value.trim();
+  const driver=document.getElementById('sale-driver').value.trim();
+  const supervisor=document.getElementById('sale-supervisor').value;
+  const date=document.getElementById('sale-date').value;
+  const notes=document.getElementById('sale-notes').value.trim();
+  const clients=getClients();
+  const client=clients.find(function(c){return c.id===clientId;});
+  if(!clientId){alert('Please select a client.');return;}
+  if(!truck){alert('Please enter truck registration.');return;}
+
+  const lines=[];
+  const usedBagIds=[];
+  document.querySelectorAll('#sale-lines-container input[type=number]').forEach(function(inp){
+    const w=parseFloat(inp.value)||0;
+    if(w>0){
+      const avail=parseFloat(inp.dataset.available)||0;
+      if(w>avail){alert('Weight for '+inp.dataset.product+' exceeds available stock ('+avail+' kg).');return;}
+      const allBagIds=JSON.parse(inp.dataset.bagids||'[]');
+      // Select bags to fulfil weight
+      const db=getDB();let rem=w;const selBags=[];
+      allBagIds.forEach(function(id){if(rem>0){const bag=db.bags.find(function(b){return b.id===id;});if(bag){rem-=bag.weight;selBags.push(id);}}});
+      usedBagIds.push.apply(usedBagIds,selBags);
+      lines.push({productName:inp.dataset.product,feedName:inp.dataset.feed,weight:w,bagIds:selBags});
+    }
+  });
+
+  if(!lines.length){alert('Please enter at least one product weight to load.');return;}
+
+  const sale={
+    id:genId(),
+    date:date,
+    timestamp:new Date().toISOString(),
+    clientId:clientId,
+    clientName:client?client.name:'—',
+    destination:destination,
+    truck:truck,
+    driver:driver,
+    supervisor:supervisor,
+    lines:lines,
+    bagIds:usedBagIds,
+    notes:notes,
+    totalWeight:lines.reduce(function(s,l){return s+l.weight;},0)
+  };
+
+  const db=getDB();
+  if(!db.sales)db.sales=[];
+  db.sales.push(sale);
+  saveDB(db);
+  closeOverlay('overlay-register-sale');
+  renderSalesList();
+  renderStock();
+  if(getServerUrl()) syncToServer();
+  generateDeliveryNote(sale);
+}
+
+function renderSalesList(){
+  const db=getDB();
+  const el=document.getElementById('sales-list');if(!el)return;
+  el.innerHTML='';
+  const sales=(db.sales||[]).slice().reverse();
+  if(!sales.length){el.innerHTML='<div class="empty">No sales recorded yet</div>';return;}
+  sales.forEach(function(s){
+    const entry=document.createElement('div');entry.className='list-entry';
+    const left=document.createElement('div');left.className='list-entry-left';
+    const title=document.createElement('div');title.className='list-entry-title';title.textContent=s.clientName+' · '+s.totalWeight.toLocaleString()+' kg';
+    const meta=document.createElement('div');meta.className='list-entry-meta';
+    meta.textContent=s.date+' · '+s.truck+' · '+s.lines.map(function(l){return l.productName;}).join(', ');
+    left.appendChild(title);left.appendChild(meta);
+    const right=document.createElement('div');right.className='list-entry-right';
+    const btn=document.createElement('button');btn.className='btn btn-ghost btn-sm';btn.textContent='📄 Note';
+    btn.addEventListener('click',function(){generateDeliveryNote(s);});
+    right.appendChild(btn);
+    entry.appendChild(left);entry.appendChild(right);
+    el.appendChild(entry);
+  });
+}
+
+// ════════════ DELIVERY NOTE (PDF) ════════════
+function generateDeliveryNote(sale){
+  if(typeof window.jspdf==='undefined'){
+    const script=document.createElement('script');
+    script.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+    script.onload=function(){generateDeliveryNote(sale);};
+    document.head.appendChild(script);return;
+  }
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({unit:'mm',format:'a4'});
+  const PW=210,PH=297,ML=15,MR=15,TW=PW-ML-MR;
+  const pink=[233,30,140];const dark=[13,17,23];const gray=[100,100,100];
+  let y=15;
+
+  // Header
+  doc.setFillColor(...dark);doc.rect(0,0,PW,35,'F');
+  doc.setTextColor(240,165,0);doc.setFontSize(20);doc.setFont('helvetica','bold');
+  doc.text('GeT Energy',ML,y+8);
+  doc.setTextColor(255,255,255);doc.setFontSize(11);doc.setFont('helvetica','normal');
+  doc.text('Ball Mill Operations',ML,y+15);
+  doc.setTextColor(...pink);doc.setFontSize(16);doc.setFont('helvetica','bold');
+  doc.text('DELIVERY NOTE',PW-MR,y+8,{align:'right'});
+  doc.setTextColor(200,200,200);doc.setFontSize(9);doc.setFont('helvetica','normal');
+  doc.text('DN-'+sale.id.slice(-6).toUpperCase(),PW-MR,y+15,{align:'right'});
+  y=45;
+
+  // Sale info
+  doc.setTextColor(...dark);doc.setFontSize(9);doc.setFont('helvetica','normal');
+  const col1=ML,col2=ML+TW/2;
+  const fields=[
+    ['Date:',sale.date,'Client:',sale.clientName],
+    ['Truck Reg:',sale.truck,'Destination:',sale.destination||'—'],
+    ['Driver:',sale.driver||'—','Supervisor:',sale.supervisor||'—'],
+  ];
+  fields.forEach(function(row){
+    doc.setFont('helvetica','bold');doc.setTextColor(...gray);
+    doc.text(row[0],col1,y);doc.text(row[2],col2,y);
+    doc.setFont('helvetica','normal');doc.setTextColor(...dark);
+    doc.text(row[1]||'—',col1+25,y);doc.text(row[3]||'—',col2+25,y);
+    y+=7;
+  });
+  y+=5;
+
+  // Products table
+  doc.setFillColor(240,165,0);doc.rect(ML,y,TW,8,'F');
+  doc.setTextColor(0,0,0);doc.setFont('helvetica','bold');doc.setFontSize(9);
+  doc.text('Product',ML+2,y+5.5);
+  doc.text('Feed Material',ML+70,y+5.5);
+  doc.text('Weight (kg)',PW-MR-2,y+5.5,{align:'right'});
+  y+=10;
+  let totalW=0;
+  sale.lines.forEach(function(line,i){
+    if(i%2===0)doc.setFillColor(248,248,248);else doc.setFillColor(255,255,255);
+    doc.rect(ML,y-4,TW,8,'F');
+    doc.setTextColor(...dark);doc.setFont('helvetica','normal');doc.setFontSize(9);
+    doc.text(line.productName||'—',ML+2,y+0.5);
+    doc.text(line.feedName||'—',ML+70,y+0.5);
+    doc.text(line.weight.toLocaleString(),PW-MR-2,y+0.5,{align:'right'});
+    totalW+=line.weight;y+=8;
+  });
+  doc.setFillColor(240,165,0);doc.rect(ML,y,TW,8,'F');
+  doc.setTextColor(0,0,0);doc.setFont('helvetica','bold');doc.setFontSize(10);
+  doc.text('TOTAL',ML+2,y+5.5);
+  doc.text(totalW.toLocaleString()+' kg',PW-MR-2,y+5.5,{align:'right'});
+  y+=16;
+
+  if(sale.notes){
+    doc.setTextColor(...gray);doc.setFont('helvetica','bold');doc.setFontSize(9);doc.text('Notes:',ML,y);
+    doc.setFont('helvetica','normal');doc.setTextColor(...dark);
+    const noteLines=doc.splitTextToSize(sale.notes,TW-20);
+    doc.text(noteLines,ML+20,y);y+=noteLines.length*5+8;
+  }
+
+  // Signature blocks
+  y=PH-60;
+  doc.setDrawColor(...gray);doc.setLineWidth(0.3);
+  doc.line(ML,y,ML+60,y);doc.line(PW-MR-60,y,PW-MR,y);
+  doc.setTextColor(...gray);doc.setFontSize(8);doc.setFont('helvetica','normal');
+  doc.text('Loading Supervisor Signature',ML,y+4);
+  doc.text('Receiving Party Signature',PW-MR-60,y+4);
+  doc.text(sale.supervisor||'________________',ML,y+10);
+  doc.text('Date: '+sale.date,ML,y+16);
+
+  // Footer
+  doc.setFillColor(...dark);doc.rect(0,PH-15,PW,15,'F');
+  doc.setTextColor(100,100,100);doc.setFontSize(7);
+  doc.text('GeT Energy Ball Mill · Generated '+new Date().toLocaleString('en-ZA'),ML,PH-7);
+  doc.text('Page 1 of 1',PW-MR,PH-7,{align:'right'});
+
+  doc.save('DeliveryNote-'+sale.clientName.replace(/\s/g,'_')+'-'+sale.date+'.pdf');
+}
+
+// ════════════ ADMIN ════════════
+function showAdminSection(section){
+  window._adminSection=section;
+  const el=document.getElementById('admin-section-content');
+  el.innerHTML='';
+  const titles={operators:'👷 Operators',clients:'🏢 Clients',feedmaterials:'🪨 Feed Materials',products:'🏷️ Product Types'};
+  const hdr=document.createElement('div');hdr.className='sec-hdr';hdr.textContent=titles[section]||section;el.appendChild(hdr);
+
+  if(section==='operators') renderAdminList(getOperators(),'operator',el);
+  else if(section==='clients') renderAdminList(getClients(),'client',el);
+  else if(section==='feedmaterials') renderFeedMaterialsAdmin(el);
+  else if(section==='products') renderProductsAdmin(el);
+
+  const addBtn=document.createElement('button');addBtn.className='btn btn-gold';addBtn.style.marginTop='8px';
+  addBtn.textContent='+ Add '+titles[section];
+  addBtn.addEventListener('click',function(){openAdminForm(section);});
+  el.appendChild(addBtn);
+}
+
+function renderAdminList(items,type,el){
+  if(!items.length){const empty=document.createElement('div');empty.className='empty';empty.textContent='None registered yet';el.appendChild(empty);return;}
+  items.forEach(function(item){
+    const entry=document.createElement('div');entry.className='list-entry';
+    const left=document.createElement('div');left.className='list-entry-left';
+    const title=document.createElement('div');title.className='list-entry-title';title.textContent=item.name;
+    const meta=document.createElement('div');meta.className='list-entry-meta';
+    if(type==='operator') meta.textContent=(item.position||'')+(item.tel?' · '+item.tel:'');
+    else if(type==='client') meta.textContent=(item.contact||'')+(item.email?' · '+item.email:'');
+    left.appendChild(title);left.appendChild(meta);
+    const right=document.createElement('div');right.className='list-entry-right';
+    const delBtn=document.createElement('button');delBtn.className='btn btn-ghost btn-sm';delBtn.textContent='Delete';
+    delBtn.addEventListener('click',function(){deleteAdminItem(type,item.id);});
+    right.appendChild(delBtn);
+    entry.appendChild(left);entry.appendChild(right);el.appendChild(entry);
+  });
+}
+
+function renderFeedMaterialsAdmin(el){
+  const fms=getFeedMaterials();
+  if(!fms.length){const empty=document.createElement('div');empty.className='empty';empty.textContent='No feed materials registered';el.appendChild(empty);return;}
+  fms.forEach(function(fm){
+    const entry=document.createElement('div');entry.className='list-entry';entry.style.flexDirection='column';entry.style.alignItems='flex-start';
+    const row=document.createElement('div');row.style.cssText='display:flex;justify-content:space-between;width:100%;align-items:center;';
+    const title=document.createElement('div');title.className='list-entry-title';title.textContent=fm.name;
+    const delBtn=document.createElement('button');delBtn.className='btn btn-ghost btn-sm';delBtn.textContent='Delete';
+    delBtn.addEventListener('click',function(){deleteAdminItem('feedmaterial',fm.id);});
+    row.appendChild(title);row.appendChild(delBtn);entry.appendChild(row);
+    // Show chute mapping
+    const chuteMap=getChuteMap();
+    const chutes=['1','2','3','4','5','6','BH1','BH2'];
+    const mapDiv=document.createElement('div');mapDiv.style.cssText='display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;width:100%;';
+    chutes.forEach(function(c){
+      const cKey=fm.id+'_'+c;
+      const prod=chuteMap[cKey];
+      const chip=document.createElement('div');chip.className='chip '+(prod?'active':'');chip.style.fontSize='11px';
+      chip.textContent='C'+c+': '+(prod?prod.productName:'—');
+      chip.addEventListener('click',function(){openChuteMappingForm(fm.id,fm.name,c);});
+      mapDiv.appendChild(chip);
+    });
+    entry.appendChild(mapDiv);
+    const mapBtn=document.createElement('button');mapBtn.className='btn btn-ghost btn-sm';mapBtn.style.marginTop='8px';mapBtn.textContent='⚙ Map Chutes';
+    mapBtn.addEventListener('click',function(){openChuteMappingForm(fm.id,fm.name,'1');});
+    entry.appendChild(mapBtn);
+    el.appendChild(entry);
+  });
+}
+
+function renderProductsAdmin(el){
+  const prods=getProducts();
+  if(!prods.length){const empty=document.createElement('div');empty.className='empty';empty.textContent='No product types registered';el.appendChild(empty);return;}
+  prods.forEach(function(p){
+    const entry=document.createElement('div');entry.className='list-entry';
+    const left=document.createElement('div');left.className='list-entry-left';
+    const title=document.createElement('div');title.className='list-entry-title';title.textContent=p.name;
+    const meta=document.createElement('div');meta.className='list-entry-meta';meta.textContent=p.description||'';
+    left.appendChild(title);left.appendChild(meta);
+    const right=document.createElement('div');right.className='list-entry-right';
+    const delBtn=document.createElement('button');delBtn.className='btn btn-ghost btn-sm';delBtn.textContent='Delete';
+    delBtn.addEventListener('click',function(){deleteAdminItem('product',p.id);});
+    right.appendChild(delBtn);
+    entry.appendChild(left);entry.appendChild(right);el.appendChild(entry);
+  });
+}
+
+function openChuteMappingForm(feedId,feedName,defaultChute){
+  const body=document.getElementById('admin-form-body');body.innerHTML='';
+  document.getElementById('admin-form-title').textContent='Map Chutes — '+feedName;
+  const prods=getProducts();
+  const chuteMap=getChuteMap();
+  const chutes=['1','2','3','4','5','6','BH1','BH2'];
+  chutes.forEach(function(c){
+    const cKey=feedId+'_'+c;
+    const cur=chuteMap[cKey];
+    const row=document.createElement('div');row.className='fu-row';
+    const lbl=document.createElement('label');lbl.textContent='Chute '+c;row.appendChild(lbl);
+    const sel=document.createElement('select');sel.className='fu-select';sel.id='cmap_'+c;
+    const blank=document.createElement('option');blank.value='';blank.textContent='— Not used —';sel.appendChild(blank);
+    prods.forEach(function(p){const o=document.createElement('option');o.value=p.id+'|'+p.name;o.textContent=p.name;if(cur&&cur.productId===p.id)o.selected=true;sel.appendChild(o);});
+    row.appendChild(sel);body.appendChild(row);
+  });
+  const saveBtn=document.createElement('button');saveBtn.className='btn btn-gold';saveBtn.textContent='Save Chute Mapping';
+  saveBtn.addEventListener('click',function(){
+    const settings=getSettings();if(!settings.chuteMap)settings.chuteMap={};
+    chutes.forEach(function(c){
+      const sel=document.getElementById('cmap_'+c);
+      const cKey=feedId+'_'+c;
+      if(sel.value){const parts=sel.value.split('|');settings.chuteMap[cKey]={productId:parts[0],productName:parts[1]};}
+      else{delete settings.chuteMap[cKey];}
+    });
+    saveSettings(settings);
+    closeOverlay('overlay-admin-form');
+    showAdminSection('feedmaterials');
+    if(getServerUrl()) syncToServer();
+  });
+  body.appendChild(saveBtn);
+  openOverlay('overlay-admin-form');
+}
+
+function openAdminForm(section){
+  const body=document.getElementById('admin-form-body');body.innerHTML='';
+  const titles={operators:'Add Operator',clients:'Add Client',feedmaterials:'Add Feed Material',products:'Add Product Type'};
+  document.getElementById('admin-form-title').textContent=titles[section]||'Add';
+
+  if(section==='operators'){
+    [['name','Name'],['position','Position'],['tel','Phone Number']].forEach(function(f){
+      const row=document.createElement('div');row.className='fu-row';
+      const l=document.createElement('label');l.textContent=f[1];row.appendChild(l);
+      if(f[0]==='position'){
+        const sel=document.createElement('select');sel.className='fu-select';sel.id='af_'+f[0];
+        ['Operator','Assistant','Supervisor','Plant Manager','Site Manager'].forEach(function(p){const o=document.createElement('option');o.value=p;o.textContent=p;sel.appendChild(o);});
+        row.appendChild(sel);
+      } else {
+        const inp=document.createElement('input');inp.className='fu-input';inp.id='af_'+f[0];inp.placeholder=f[1];row.appendChild(inp);
+      }
+      body.appendChild(row);
+    });
+  } else if(section==='clients'){
+    [['name','Company Name'],['contact','Contact Person'],['email','Email'],['address','Address']].forEach(function(f){
+      const row=document.createElement('div');row.className='fu-row';
+      const l=document.createElement('label');l.textContent=f[1];row.appendChild(l);
+      const inp=document.createElement('input');inp.className='fu-input';inp.id='af_'+f[0];inp.placeholder=f[1];row.appendChild(inp);
+      body.appendChild(row);
+    });
+  } else if(section==='feedmaterials'){
+    [['name','Feed Material Name (e.g. Aluminium Dross)'],['description','Description']].forEach(function(f){
+      const row=document.createElement('div');row.className='fu-row';
+      const l=document.createElement('label');l.textContent=f[1];row.appendChild(l);
+      const inp=document.createElement('input');inp.className='fu-input';inp.id='af_'+f[0];inp.placeholder=f[1].split(' (')[0];row.appendChild(inp);
+      body.appendChild(row);
+    });
+  } else if(section==='products'){
+    [['name','Product Name (e.g. Oxy Dust, Fines, Skulls)'],['description','Description / notes']].forEach(function(f){
+      const row=document.createElement('div');row.className='fu-row';
+      const l=document.createElement('label');l.textContent=f[1];row.appendChild(l);
+      const inp=document.createElement('input');inp.className='fu-input';inp.id='af_'+f[0];inp.placeholder=f[1].split(' (')[0];row.appendChild(inp);
+      body.appendChild(row);
+    });
+  }
+
+  const saveBtn=document.createElement('button');saveBtn.className='btn btn-gold';saveBtn.textContent='Save';
+  saveBtn.addEventListener('click',function(){saveAdminItem(section);});
+  body.appendChild(saveBtn);
+  openOverlay('overlay-admin-form');
+}
+
+function saveAdminItem(section){
+  const settings=getSettings();
+  const name=document.getElementById('af_name')?.value.trim();
+  if(!name){alert('Name is required.');return;}
+  const item={id:genId(),name:name};
+  if(section==='operators'){
+    item.position=document.getElementById('af_position')?.value||'Operator';
+    item.tel=document.getElementById('af_tel')?.value.trim()||'';
+    settings.operators.push(item);
+  } else if(section==='clients'){
+    item.contact=document.getElementById('af_contact')?.value.trim()||'';
+    item.email=document.getElementById('af_email')?.value.trim()||'';
+    item.address=document.getElementById('af_address')?.value.trim()||'';
+    settings.clients.push(item);
+  } else if(section==='feedmaterials'){
+    item.description=document.getElementById('af_description')?.value.trim()||'';
+    settings.feedMaterials.push(item);
+  } else if(section==='products'){
+    item.description=document.getElementById('af_description')?.value.trim()||'';
+    settings.products.push(item);
+  }
+  saveSettings(settings);
+  closeOverlay('overlay-admin-form');
+  showAdminSection(section);
+  if(getServerUrl()) syncToServer();
+}
+
+function deleteAdminItem(type,id){
+  if(!confirm('Delete this item?'))return;
+  const settings=getSettings();
+  if(type==='operator') settings.operators=settings.operators.filter(function(x){return x.id!==id;});
+  else if(type==='client') settings.clients=settings.clients.filter(function(x){return x.id!==id;});
+  else if(type==='feedmaterial') settings.feedMaterials=settings.feedMaterials.filter(function(x){return x.id!==id;});
+  else if(type==='product') settings.products=settings.products.filter(function(x){return x.id!==id;});
+  saveSettings(settings);
+  showAdminSection(window._adminSection||type+'s');
+}
+
+// ════════════ REPORTS ════════════
+let _reportShift='day';
+function selReportShift(s,el){
+  _reportShift=s;
+  document.querySelectorAll('#rpt-day,#rpt-night').forEach(function(b){b.classList.remove('active');});
+  el.classList.add('active');
+}
+
+function generateShiftReport(){
+  const date=document.getElementById('report-date-pick').value;
+  if(!date){alert('Please select a date.');return;}
+  const db=getDB();
+  const bags=db.bags.filter(function(b){return b.date===date&&b.shift===_reportShift;});
+  const el=document.getElementById('report-output');
+  if(!bags.length){el.innerHTML='<div class="empty">No bags found for '+date+' '+_reportShift+' shift</div>';return;}
+  
+  // Build report card
+  const card=document.createElement('div');card.className='card';
+  const title=document.createElement('div');title.style.cssText='font-size:16px;font-weight:800;margin-bottom:4px;';
+  title.textContent=(date)+' · '+(_reportShift==='day'?'☀️ Day':'🌙 Night')+' Shift Report';
+  card.appendChild(title);
+  const totalW=bags.reduce(function(s,b){return s+b.weight;},0);
+  const totalPass=bags.filter(function(b){return b.qc==='pass';}).length;
+  const totalReject=bags.filter(function(b){return b.qc==='reject';}).length;
+  const sumDiv=document.createElement('div');sumDiv.style.cssText='display:flex;gap:12px;margin:10px 0;flex-wrap:wrap;';
+  [{l:'Total Bags',v:bags.length},{l:'Total Weight',v:totalW.toLocaleString()+' kg'},{l:'To Stock',v:totalPass},{l:'Rejected',v:totalReject}].forEach(function(s){
+    const tile=document.createElement('div');tile.style.cssText='background:var(--surface2);border-radius:6px;padding:8px 12px;';
+    tile.innerHTML='<div style="font-size:10px;color:var(--muted);">'+s.l+'</div><div style="font-size:18px;font-weight:800;color:var(--gold);">'+s.v+'</div>';
+    sumDiv.appendChild(tile);
+  });
+  card.appendChild(sumDiv);
+  // By chute breakdown
+  const chutes=['1','2','3','4','5','6','BH1','BH2'];
+  const dividerEl=document.createElement('div');dividerEl.className='sec-hdr';dividerEl.textContent='By Chute';card.appendChild(dividerEl);
+  chutes.forEach(function(c){
+    const cb=bags.filter(function(b){return b.chute===c;});
+    if(!cb.length)return;
+    const cw=cb.reduce(function(s,b){return s+b.weight;},0);
+    const row=document.createElement('div');row.className='stat-row';
+    const lbl=document.createElement('span');lbl.className='stat-label';lbl.textContent='Chute '+c+' ('+(cb[0].productName||'—')+')';
+    const val=document.createElement('span');val.className='stat-val';val.textContent=cw.toLocaleString()+' kg · '+cb.length+' bags';
+    row.appendChild(lbl);row.appendChild(val);card.appendChild(row);
+  });
+  // Shift info from shifts DB
+  const shift=db.shifts&&db.shifts.find(function(s){return s.shiftType===_reportShift&&new Date(s.startTime).toLocaleDateString('en-CA')===date;});
+  if(shift){
+    const crewDiv=document.createElement('div');crewDiv.className='sec-hdr';crewDiv.textContent='Crew';card.appendChild(crewDiv);
+    const crewRow=document.createElement('div');crewRow.className='stat-row';
+    const cl=document.createElement('span');cl.className='stat-label';cl.textContent='On shift';
+    const cv=document.createElement('span');cv.className='stat-val';cv.textContent=(shift.crew||[]).join(', ')||'—';
+    crewRow.appendChild(cl);crewRow.appendChild(cv);card.appendChild(crewRow);
+    if(shift.startTime){
+      const timeRow=document.createElement('div');timeRow.className='stat-row';
+      const tl=document.createElement('span');tl.className='stat-label';tl.textContent='Duration';
+      const tv=document.createElement('span');tv.className='stat-val';
+      const dur=shift.endTime?Math.floor((shift.endTime-shift.startTime)/60000):null;
+      tv.textContent=dur?Math.floor(dur/60)+'h '+dur%60+'m':'Still active';
+      timeRow.appendChild(tl);timeRow.appendChild(tv);card.appendChild(timeRow);
+    }
+  }
+  el.innerHTML='';el.appendChild(card);
+}
+
+function generateMonthlyReport(){
+  const date=document.getElementById('report-date-pick').value||new Date().toLocaleDateString('en-CA');
+  const month=date.substring(0,7);
+  const db=getDB();
+  const bags=db.bags.filter(function(b){return b.date&&b.date.startsWith(month)&&b.qc==='pass';});
+  const sales=(db.sales||[]).filter(function(s){return s.date&&s.date.startsWith(month);});
+  const el=document.getElementById('report-output');
+  const card=document.createElement('div');card.className='card';
+  const title=document.createElement('div');title.style.cssText='font-size:16px;font-weight:800;margin-bottom:10px;';
+  title.textContent='Monthly Report — '+month;card.appendChild(title);
+  const totalW=bags.reduce(function(s,b){return s+b.weight;},0);
+  const soldW=sales.reduce(function(s,sa){return s+sa.totalWeight;},0);
+  [{l:'Bags Produced',v:bags.length},{l:'Weight Produced',v:totalW.toLocaleString()+' kg'},{l:'Weight Sold',v:soldW.toLocaleString()+' kg'},{l:'Truck Loads',v:sales.length}].forEach(function(stat){
+    const row=document.createElement('div');row.className='stat-row';
+    const l=document.createElement('span');l.className='stat-label';l.textContent=stat.l;
+    const v=document.createElement('span');v.className='stat-val';v.textContent=stat.v;
+    row.appendChild(l);row.appendChild(v);card.appendChild(row);
+  });
+  el.innerHTML='';el.appendChild(card);
+}
+
+// ════════════ EDIT RECORDS ════════════
+function loadEditList(){
+  const date=document.getElementById('edit-date-filter').value;
+  if(!date){document.getElementById('edit-bag-list').innerHTML='<div class="empty">Select a date</div>';return;}
+  const db=getDB();
+  const bags=db.bags.filter(function(b){return b.date===date;});
+  const el=document.getElementById('edit-bag-list');el.innerHTML='';
+  if(!bags.length){el.innerHTML='<div class="empty">No bags on '+date+'</div>';return;}
+  bags.forEach(function(b){
+    const entry=document.createElement('div');entry.className='list-entry';
+    const left=document.createElement('div');left.className='list-entry-left';
+    const title=document.createElement('div');title.className='list-entry-title';title.textContent='Chute '+b.chute+' · '+(b.productName||'—')+' · '+b.weight+' kg';
+    const meta=document.createElement('div');meta.className='list-entry-meta';meta.textContent=b.time+' · '+b.operator+' · '+(b.tagNum?'Tag: '+b.tagNum:'')+' · '+(b.qc==='pass'?'✅ Stock':'⚠ Reject');
+    left.appendChild(title);left.appendChild(meta);
+    const right=document.createElement('div');right.className='list-entry-right';
+    const editBtn=document.createElement('button');editBtn.className='btn btn-ghost btn-sm';editBtn.textContent='Edit';
+    const delBtn=document.createElement('button');delBtn.className='btn btn-ghost btn-sm';delBtn.textContent='Del';delBtn.style.color='var(--red)';
+    (function(bag){
+      editBtn.addEventListener('click',function(){openEditBag(bag);});
+      delBtn.addEventListener('click',function(){if(confirm('Delete this bag record?')){const db2=getDB();db2.bags=db2.bags.filter(function(x){return x.id!==bag.id;});saveDB(db2);loadEditList();updateHomeStats();}});
+    })(b);
+    right.appendChild(editBtn);right.appendChild(delBtn);
+    entry.appendChild(left);entry.appendChild(right);el.appendChild(entry);
+  });
+}
+
+function openEditBag(bag){
+  const body=document.getElementById('edit-bag-body');body.innerHTML='';
+  const chuteMap=getChuteMap();
+  const fms=getFeedMaterials();
+  const ops=getOperators();
+  const prods=getProducts();
+  const chutes=['1','2','3','4','5','6','BH1','BH2'];
+
+  // Chute
+  const cRow=document.createElement('div');cRow.className='fu-row';
+  const cL=document.createElement('label');cL.textContent='Chute';cRow.appendChild(cL);
+  const cD=document.createElement('div');cD.className='chute-grid';
+  chutes.forEach(function(c){
+    const btn=document.createElement('button');btn.className='chute-btn'+(c===bag.chute?' active':'');btn.textContent=c;
+    btn.addEventListener('click',function(){cD.querySelectorAll('.chute-btn').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');bag.chute=c;});
+    cD.appendChild(btn);
+  });
+  cRow.appendChild(cD);body.appendChild(cRow);
+
+  // Weight
+  const wRow=document.createElement('div');wRow.className='fu-row';
+  const wL=document.createElement('label');wL.textContent='Weight (kg)';wRow.appendChild(wL);
+  const wI=document.createElement('input');wI.type='number';wI.className='fu-input fu-big';wI.value=bag.weight;
+  wI.addEventListener('input',function(){bag.weight=parseFloat(this.value)||0;});
+  wRow.appendChild(wI);body.appendChild(wRow);
+
+  // Operator
+  const opRow=document.createElement('div');opRow.className='fu-row';
+  const opL=document.createElement('label');opL.textContent='Operator';opRow.appendChild(opL);
+  const opSel=document.createElement('select');opSel.className='fu-select';
+  ops.forEach(function(op){const o=document.createElement('option');o.value=op.name;o.textContent=op.name;if(op.name===bag.operator)o.selected=true;opSel.appendChild(o);});
+  opSel.addEventListener('change',function(){bag.operator=this.value;});
+  opRow.appendChild(opSel);body.appendChild(opRow);
+
+  // QC
+  const qcRow=document.createElement('div');qcRow.className='fu-row';
+  const qcL=document.createElement('label');qcL.textContent='Quality Status';qcRow.appendChild(qcL);
+  const qcD=document.createElement('div');qcD.style.cssText='display:flex;gap:8px;';
+  ['pass','reject'].forEach(function(q){
+    const btn=document.createElement('button');btn.className='chip'+(bag.qc===q?' active':'');
+    btn.textContent=q==='pass'?'✅ Pass':'❌ Reject';
+    btn.addEventListener('click',function(){qcD.querySelectorAll('.chip').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');bag.qc=q;});
+    qcD.appendChild(btn);
+  });
+  qcRow.appendChild(qcD);body.appendChild(qcRow);
+
+  // Tag
+  const tagRow=document.createElement('div');tagRow.className='fu-row';
+  const tagL=document.createElement('label');tagL.textContent='Tag Number';tagRow.appendChild(tagL);
+  const tagI=document.createElement('input');tagI.className='fu-input';tagI.value=bag.tagNum||'';
+  tagI.addEventListener('input',function(){bag.tagNum=this.value;});
+  tagRow.appendChild(tagI);body.appendChild(tagRow);
+
+  const saveBtn=document.createElement('button');saveBtn.className='btn btn-gold';saveBtn.textContent='Save Changes';
+  saveBtn.addEventListener('click',function(){
+    const db=getDB();
+    const idx=db.bags.findIndex(function(b){return b.id===bag.id;});
+    if(idx>=0){db.bags[idx]=bag;saveDB(db);}
+    closeOverlay('overlay-edit-bag');
+    loadEditList();updateHomeStats();renderStock();
+  });
+  body.appendChild(saveBtn);
+  openOverlay('overlay-edit-bag');
+}
+
+// ════════════ END SHIFT REPORT ════════════
+function openEndShiftReport(shift){
+  const active=shift||getActiveShift();
+  if(!active)return;
+  const db=getDB();
+  const shiftDate=new Date(active.startTime).toLocaleDateString('en-CA');
+  const bags=db.bags.filter(function(b){return b.shiftId===active.id;});
+  const body=document.getElementById('shift-report-body');body.innerHTML='';
+  const title=document.createElement('div');title.style.cssText='font-size:16px;font-weight:800;margin-bottom:4px;';
+  title.textContent=(active.shiftType==='day'?'☀️ Day':'🌙 Night')+' Shift — '+shiftDate;body.appendChild(title);
+  const dur=active.endTime?Math.floor((active.endTime-active.startTime)/60000):null;
+  const info=document.createElement('div');info.style.cssText='font-size:12px;color:var(--muted);margin-bottom:12px;';
+  info.textContent='Started: '+new Date(active.startTime).toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'})+(active.endTime?' · Ended: '+new Date(active.endTime).toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'}):'')+(dur?' · '+Math.floor(dur/60)+'h '+dur%60+'m':'');
+  body.appendChild(info);
+  if(active.crew&&active.crew.length){
+    const crewDiv=document.createElement('div');crewDiv.style.cssText='margin-bottom:12px;';
+    crewDiv.innerHTML='<div style="font-size:11px;color:var(--muted);font-weight:600;">CREW:</div><div style="font-size:14px;font-weight:600;">'+active.crew.join(', ')+'</div>';
+    body.appendChild(crewDiv);
+  }
+  const totalW=bags.reduce(function(s,b){return s+b.weight;},0);
+  const pass=bags.filter(function(b){return b.qc==='pass';});
+  const reject=bags.filter(function(b){return b.qc==='reject';});
+  const stats=document.createElement('div');stats.style.cssText='display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;';
+  [{l:'Total Bags',v:bags.length},{l:'To Stock',v:pass.length},{l:'Rejected',v:reject.length},{l:'Total Weight',v:totalW.toLocaleString()+' kg',span:3}].forEach(function(s){
+    const tile=document.createElement('div');tile.style.cssText='background:var(--surface2);border-radius:6px;padding:10px;'+(s.span?'grid-column:span '+s.span:'');
+    tile.innerHTML='<div style="font-size:10px;color:var(--muted);">'+s.l+'</div><div style="font-size:20px;font-weight:800;color:var(--gold);">'+s.v+'</div>';
+    stats.appendChild(tile);
+  });
+  body.appendChild(stats);
+  // Per chute
+  const chDiv=document.createElement('div');chDiv.className='sec-hdr';chDiv.textContent='By Chute';body.appendChild(chDiv);
+  ['1','2','3','4','5','6','BH1','BH2'].forEach(function(c){
+    const cb=bags.filter(function(b){return b.chute===c;});if(!cb.length)return;
+    const cw=cb.reduce(function(s,b){return s+b.weight;},0);
+    const hdr=document.createElement('div');hdr.style.cssText='display:flex;justify-content:space-between;font-size:13px;font-weight:700;margin:6px 0 4px;';
+    hdr.innerHTML='<span>Chute '+c+' — '+(cb[0].productName||'—')+'</span><span style="color:var(--gold)">'+cw.toLocaleString()+' kg</span>';
+    body.appendChild(hdr);
+    cb.forEach(function(b){
+      const row=document.createElement('div');row.style.cssText='display:flex;justify-content:space-between;font-size:11px;color:var(--muted);padding:2px 0;border-bottom:1px solid var(--border);';
+      row.innerHTML='<span>'+b.time+' · '+b.operator+(b.tagNum?' · Tag: '+b.tagNum:'')+'</span><span>'+b.weight+' kg '+(b.qc==='reject'?'⚠':'')+'</span>';
+      body.appendChild(row);
+    });
+  });
+  if(active.notes){
+    const noteDiv=document.createElement('div');noteDiv.style.cssText='margin-top:12px;padding:10px;background:var(--surface);border-radius:6px;font-size:13px;';
+    noteDiv.innerHTML='<div style="font-size:11px;color:var(--muted);margin-bottom:4px;">HANDOVER NOTES</div>'+active.notes;
+    body.appendChild(noteDiv);
+  }
+  openOverlay('overlay-shift-report');
+}
+
+// ════════════ OVERLAY HELPERS ════════════
+function openOverlay(id){document.getElementById(id).classList.add('open');}
+function closeOverlay(id){document.getElementById(id).classList.remove('open');}
+
+// Wire close buttons
+document.getElementById('close-submit-bag').addEventListener('click',function(){closeOverlay('overlay-submit-bag');});
+document.getElementById('close-start-shift').addEventListener('click',function(){closeOverlay('overlay-start-shift');});
+document.getElementById('close-register-sale').addEventListener('click',function(){closeOverlay('overlay-register-sale');});
+document.getElementById('close-admin-form').addEventListener('click',function(){closeOverlay('overlay-admin-form');});
+document.getElementById('close-shift-report').addEventListener('click',function(){closeOverlay('overlay-shift-report');});
+document.getElementById('close-edit-bag').addEventListener('click',function(){closeOverlay('overlay-edit-bag');});
+
+// ════════════ SCREEN NAVIGATION ════════════
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
+  document.querySelectorAll('.nav-btn').forEach(function(b){b.classList.remove('active');});
+  document.getElementById(id).classList.add('active');
+  const navMap={'screen-home':'nav-home','screen-production':'nav-production','screen-stock':'nav-stock','screen-sales':'nav-sales','screen-admin':'nav-admin','screen-edit':'nav-edit','screen-reports':'nav-edit'};
+  const navId=navMap[id];if(navId){const nb=document.getElementById(navId);if(nb)nb.classList.add('active');}
+  if(id==='screen-production') renderProdBagList();
+  if(id==='screen-stock') renderStock();
+  if(id==='screen-sales') renderSalesList();
+  if(id==='screen-edit'){const d=new Date().toLocaleDateString('en-CA');document.getElementById('edit-date-filter').value=d;loadEditList();}
+}
+
+// ════════════ SERVER SETTINGS ════════════
+function showServerSettings(){
+  const el=document.getElementById('admin-section-content');
+  el.innerHTML='';
+  const hdr=document.createElement('div');hdr.className='sec-hdr';hdr.textContent='🌐 Server Configuration';el.appendChild(hdr);
+  const row=document.createElement('div');row.className='fu-row';
+  const lbl=document.createElement('label');lbl.textContent='Railway Server URL';row.appendChild(lbl);
+  const inp=document.createElement('input');inp.className='fu-input';inp.id='server-url-input';inp.placeholder='https://your-app.up.railway.app';inp.value=getServerUrl();row.appendChild(inp);
+  el.appendChild(row);
+  const saveBtn=document.createElement('button');saveBtn.className='btn btn-gold';saveBtn.textContent='Save & Test Connection';
+  saveBtn.addEventListener('click',async function(){
+    const url=document.getElementById('server-url-input').value.trim().replace(/\/$/,'');
+    if(!url){alert('Please enter a URL');return;}
+    try{
+      const res=await fetch(url+'/health');
+      const data=await res.json();
+      if(data.ok){
+        localStorage.setItem('bm_server_url',url);
+        showSyncStatus('✅ Connected to server!','var(--green)');
+        saveBtn.textContent='✅ Connected — Saved';
+      } else {throw new Error('Bad response');}
+    }catch(e){alert('Could not connect to server. Check the URL.\n\n'+e.message);}
+  });
+  el.appendChild(saveBtn);
+  if(getServerUrl()){
+    const syncBtn=document.createElement('button');syncBtn.className='btn btn-steel';syncBtn.style.background='var(--steel2)';syncBtn.textContent='⬇ Pull All Data from Server Now';
+    syncBtn.addEventListener('click',pullFromServer);el.appendChild(syncBtn);
+    const pushBtn=document.createElement('button');pushBtn.className='btn btn-ghost';pushBtn.textContent='⬆ Push All Local Data to Server';
+    pushBtn.addEventListener('click',syncToServer);el.appendChild(pushBtn);
+
+    const divider=document.createElement('div');divider.className='divider';el.appendChild(divider);
+    const dangerHdr=document.createElement('div');dangerHdr.className='sec-hdr';dangerHdr.style.color='var(--red)';dangerHdr.textContent='⚠ Data Reset';el.appendChild(dangerHdr);
+    const noteEl=document.createElement('div');noteEl.style.cssText='font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.5;';
+    noteEl.textContent='Wipes ALL bags, sales & shifts from the server and local storage, then seeds the opening stock totals (NF Carbon Black, up to 17 May 2026) as a single historical record per chute.';
+    el.appendChild(noteEl);
+    const wipeBtn=document.createElement('button');wipeBtn.className='btn btn-red';wipeBtn.textContent='🗑 Wipe Server & Seed Opening Stock';
+    wipeBtn.addEventListener('click',wipeAndSeedOpeningStock);el.appendChild(wipeBtn);
+  }
+}
+
+// ════════════ WIPE & SEED OPENING STOCK ════════════
+async function wipeAndSeedOpeningStock(){
+  if(!confirm('⚠️ WARNING\n\nThis will permanently delete ALL bags, sales and shifts from the server and your local storage.\n\nIt will then upload the NF Carbon Black opening stock (pre-18 May 2026) plus all scanned bag data (18 May – 05 Jun 2026).\n\nAre you sure?')) return;
+  const url=getServerUrl();
+  if(!url){alert('Server URL not set.');return;}
+
+  // ── Resolve feedId from registered feed materials ──
+  const settings=getSettings();
+  const fms=settings.feedMaterials||[];
+  const nfFeed=fms.find(function(f){return f.name&&f.name.toLowerCase().includes('nf carbon');})
+             ||fms.find(function(f){return f.name&&f.name.toLowerCase().includes('carbon');})
+             ||fms[0];
+  const FEED_ID=nfFeed?nfFeed.id:'seed_nf_cb';
+  const FEED_NAME=nfFeed?nfFeed.name:'NF Carbon Black';
+
+  // ── Chute → product name mapping (from chuteMap if available) ──
+  const chuteMap=settings.chuteMap||{};
+  function getProdName(chute,fallback){
+    const key=FEED_ID+'_'+chute;
+    return (chuteMap[key]&&chuteMap[key].productName)||fallback;
+  }
+  function getProdId(chute){
+    const key=FEED_ID+'_'+chute;
+    return (chuteMap[key]&&chuteMap[key].productId)||('seed_prod_'+chute);
+  }
+
+  // ── Helper to build a bag record ──
+  var _seedIdx=0;
+  function mkBag(date,shift,chute,weight,operator,note){
+    _seedIdx++;
+    const ts=date+'T'+(shift==='night'?'20':'08')+':00:00.000Z';
+    return {
+      id:'seed_'+date.replace(/-/g,'')+'_c'+chute+'_'+_seedIdx,
+      timestamp:ts,
+      date:date,
+      time:shift==='night'?'20:00':'08:00',
+      feedId:FEED_ID,
+      feedName:FEED_NAME,
+      chute:chute,
+      productId:getProdId(chute),
+      productName:getProdName(chute,note||'NF Carbon Black'),
+      operator:operator||'Seeded',
+      weight:weight,
+      tagNum:'SCAN',
+      qc:'pass',
+      shift:shift,
+      shiftId:null,
+      isSeeded:true
+    };
+  }
+
+  showSyncStatus('⟳ Wiping server data...','var(--red)');
+
+  try{
+    // 1. Wipe server
+    const pullRes=await fetch(url+'/pull');
+    if(!pullRes.ok) throw new Error('Could not fetch current data');
+    const current=await pullRes.json();
+    for(const b of (current.bags||[])) await fetch(url+'/bags/'+b.id,{method:'DELETE'});
+    for(const s of (current.sales||[])) await fetch(url+'/sales/'+s.id,{method:'DELETE'}).catch(()=>{});
+    for(const s of (current.shifts||[])) await fetch(url+'/shifts/'+s.id,{method:'DELETE'}).catch(()=>{});
+
+    showSyncStatus('⟳ Building seed data...','var(--steel)');
+
+    const allBags=[];
+
+    // ══════════════════════════════════════════════════
+    // OPENING STOCK — pre-18 May 2026 (from spreadsheet)
+    // ══════════════════════════════════════════════════
+    const OD='2026-05-17';
+    [
+      {c:'1',  w:41065.5, p:'NF Carbon Black Dust'},
+      {c:'2',  w:115087.5,p:'NF Carbon Black Dust'},
+      {c:'BH1',w:22075,   p:'NF Carbon Black Dust'},
+      {c:'BH2',w:17587,   p:'NF Carbon Black Dust'},
+      {c:'3',  w:168784.5,p:'NF Carbon Black Fines'},
+      {c:'4',  w:3525,    p:'NF Carbon Black Fines'},
+      {c:'5',  w:50118.5, p:'NF Carbon Black NF Mix'},
+      {c:'6',  w:38104,   p:'NF Carbon Black Metal SS Mix'},
+    ].forEach(function(r){
+      _seedIdx++;
+      allBags.push({
+        id:'opening_c'+r.c+'_'+_seedIdx,
+        timestamp:OD+'T23:59:00.000Z',
+        date:OD,time:'23:59',
+        feedId:FEED_ID,feedName:FEED_NAME,
+        chute:r.c,productId:getProdId(r.c),
+        productName:getProdName(r.c,r.p),
+        operator:'Opening Stock',weight:r.w,
+        tagNum:'OPENING',qc:'pass',shift:'day',shiftId:null,isSeeded:true
+      });
+    });
+
+    // ══════════════════════════════════════════════════
+    // SCANNED DATA — 18 May to 05 Jun 2026
+    // Each entry: mkBag(date, shift, chute, weight, operator)
+    // ══════════════════════════════════════════════════
+
+    // ── 18 May 2026 — Day (Page 24) ──
+    // Operators: Lhine / Brendon
+    [789,1111,770].forEach(function(w){allBags.push(mkBag('2026-05-18','day','2',w,'Lhine'));});
+    [456,372,446].forEach(function(w){allBags.push(mkBag('2026-05-18','day','BH1',w,'Lhine'));});
+    allBags.push(mkBag('2026-05-18','day','BH2',467,'Lhine'));
+    allBags.push(mkBag('2026-05-18','day','3',1131,'Lhine'));
+    [763,1043].forEach(function(w){allBags.push(mkBag('2026-05-18','day','5',w,'Lhine'));});
+    allBags.push(mkBag('2026-05-18','day','6',863,'Lhine'));
+
+    // ── 19 May 2026 — Day (Page 23) ──
+    // Operators: Lhine / Brecon
+    allBags.push(mkBag('2026-05-19','day','1',938,'Lhine'));
+    [1144,750,643].forEach(function(w){allBags.push(mkBag('2026-05-19','day','2',w,'Lhine'));});
+    allBags.push(mkBag('2026-05-19','day','BH1',471,'Lhine'));
+    allBags.push(mkBag('2026-05-19','day','BH2',577,'Lhine'));
+    [1403,1083,1273].forEach(function(w){allBags.push(mkBag('2026-05-19','day','3',w,'Lhine'));});
+    allBags.push(mkBag('2026-05-19','day','4',576,'Lhine'));
+    allBags.push(mkBag('2026-05-19','day','5',838,'Lhine'));
+    [629,653].forEach(function(w){allBags.push(mkBag('2026-05-19','day','6',w,'Lhine'));});
+
+    // ── 19 May 2026 — Night (Page 22) ──
+    // Operators: Kganu / Luckman
+    allBags.push(mkBag('2026-05-19','night','2',502,'Kganu'));
+    allBags.push(mkBag('2026-05-19','night','BH1',360,'Kganu'));
+    allBags.push(mkBag('2026-05-19','night','BH2',381,'Kganu'));
+    [880,675].forEach(function(w){allBags.push(mkBag('2026-05-19','night','3',w,'Kganu'));});
+
+    // ── 20 May 2026 — Day (Page 21) ──
+    // Operator: Luckman / Kleiman
+    allBags.push(mkBag('2026-05-20','day','1',630,'Luckman'));
+    [732,798,769].forEach(function(w){allBags.push(mkBag('2026-05-20','day','2',w,'Luckman'));});
+    allBags.push(mkBag('2026-05-20','day','BH1',327,'Luckman'));
+    [691,661].forEach(function(w){allBags.push(mkBag('2026-05-20','day','3',w,'Luckman'));});
+    [744,687].forEach(function(w){allBags.push(mkBag('2026-05-20','day','5',w,'Luckman'));});
+    [443,571].forEach(function(w){allBags.push(mkBag('2026-05-20','day','6',w,'Luckman'));});
+
+    // ── 20 May 2026 — Night (Page 19) ──
+    // Operator: Brendon
+    [786,1070].forEach(function(w){allBags.push(mkBag('2026-05-20','night','2',w,'Brendon'));});
+    [870,920,731].forEach(function(w){allBags.push(mkBag('2026-05-20','night','3',w,'Brendon'));});
+    allBags.push(mkBag('2026-05-20','night','5',1203,'Brendon'));
+    allBags.push(mkBag('2026-05-20','night','6',897,'Brendon'));
+
+    // ── 21 May 2026 — Day (Page 20) ──
+    // Operator: Phillip & Eric
+    allBags.push(mkBag('2026-05-21','day','2',951,'Phillip'));
+
+    // ── 22 May 2026 — Day (Page 17) ──
+    // Operator: Phillip & Eric
+    [772,750,731,787].forEach(function(w){allBags.push(mkBag('2026-05-22','day','2',w,'Phillip'));});
+    [479,514].forEach(function(w){allBags.push(mkBag('2026-05-22','day','BH1',w,'Phillip'));});
+    allBags.push(mkBag('2026-05-22','day','3',1003,'Phillip'));
+    allBags.push(mkBag('2026-05-22','day','5',850,'Phillip'));
+    allBags.push(mkBag('2026-05-22','day','6',860,'Phillip'));
+
+    // ── 22 May 2026 — Night (Page 18) — Product: Albross / Groan Creek ──
+    // Operator: Lhine / Garwin / Brendon
+    [655,785,1024,1097].forEach(function(w){allBags.push(mkBag('2026-05-22','night','1',w,'Lhine'));});
+    [940,1043,731,880].forEach(function(w){allBags.push(mkBag('2026-05-22','night','2',w,'Lhine'));});
+    [589,979].forEach(function(w){allBags.push(mkBag('2026-05-22','night','3',w,'Lhine'));});
+    allBags.push(mkBag('2026-05-22','night','BH1',371,'Lhine'));
+    allBags.push(mkBag('2026-05-22','night','4',568,'Lhine'));
+    [697,928,975].forEach(function(w){allBags.push(mkBag('2026-05-22','night','5',w,'Lhine'));});
+
+    // ── 23 May 2026 — Day (Page 16) ──
+    // Operator: Phillip & Eric
+    [460,966,931].forEach(function(w){allBags.push(mkBag('2026-05-23','day','1',w,'Phillip'));});
+    [713,847,860,535].forEach(function(w){allBags.push(mkBag('2026-05-23','day','2',w,'Phillip'));});
+    [389,514].forEach(function(w){allBags.push(mkBag('2026-05-23','day','BH1',w,'Phillip'));});
+    [701,1009].forEach(function(w){allBags.push(mkBag('2026-05-23','day','3',w,'Phillip'));});
+    [881,950].forEach(function(w){allBags.push(mkBag('2026-05-23','day','5',w,'Phillip'));});
+    [460,960].forEach(function(w){allBags.push(mkBag('2026-05-23','day','6',w,'Phillip'));});
+
+    // ── 23 May 2026 — Night (Page 15) ──
+    // Operator: Lhine / Brecon
+    [792,770,784,586].forEach(function(w){allBags.push(mkBag('2026-05-23','night','1',w,'Lhine'));});
+    [1020,1181,632,1063].forEach(function(w){allBags.push(mkBag('2026-05-23','night','2',w,'Lhine'));});
+    allBags.push(mkBag('2026-05-23','night','BH1',404,'Lhine'));
+    allBags.push(mkBag('2026-05-23','night','BH2',449,'Lhine'));
+    allBags.push(mkBag('2026-05-23','night','3',782,'Lhine'));
+    [1008,960].forEach(function(w){allBags.push(mkBag('2026-05-23','night','5',w,'Lhine'));});
+    [810,526].forEach(function(w){allBags.push(mkBag('2026-05-23','night','6',w,'Lhine'));});
+
+    // ── 24 May 2026 — Day (Page 13) ──
+    // Operator: Phillip & Eric
+    [740,902].forEach(function(w){allBags.push(mkBag('2026-05-24','day','1',w,'Phillip'));});
+    [1121,803,1214,353,1036].forEach(function(w){allBags.push(mkBag('2026-05-24','day','2',w,'Phillip'));});
+    [923,385].forEach(function(w){allBags.push(mkBag('2026-05-24','day','3',w,'Phillip'));});
+    [910,1036,1024].forEach(function(w){allBags.push(mkBag('2026-05-24','day','5',w,'Phillip'));});
+    [871,808].forEach(function(w){allBags.push(mkBag('2026-05-24','day','6',w,'Phillip'));});
+
+    // ── 24 May 2026 — Night (Page 14) ──
+    // Operator: Kiernan / Luckman
+    [1032,775,663,714,605].forEach(function(w){allBags.push(mkBag('2026-05-24','night','1',w,'Kiernan'));});
+    [895,860,980].forEach(function(w){allBags.push(mkBag('2026-05-24','night','2',w,'Kiernan'));});
+    allBags.push(mkBag('2026-05-24','night','BH1',447,'Kiernan'));
+    allBags.push(mkBag('2026-05-24','night','BH2',434,'Kiernan'));
+    allBags.push(mkBag('2026-05-24','night','4',377,'Kiernan'));
+    [861,846].forEach(function(w){allBags.push(mkBag('2026-05-24','night','5',w,'Kiernan'));});
+    allBags.push(mkBag('2026-05-24','night','6',754,'Kiernan'));
+
+    // ── 25 May 2026 — Day (Page 12) ──
+    // Operator: Phillip & Eric
+    [1090,809].forEach(function(w){allBags.push(mkBag('2026-05-25','day','1',w,'Phillip'));});
+    [1167,864,1280,1254,1115].forEach(function(w){allBags.push(mkBag('2026-05-25','day','2',w,'Phillip'));});
+    allBags.push(mkBag('2026-05-25','day','BH2',531,'Phillip'));
+    [625,1085].forEach(function(w){allBags.push(mkBag('2026-05-25','day','3',w,'Phillip'));});
+    [1435,810].forEach(function(w){allBags.push(mkBag('2026-05-25','day','5',w,'Phillip'));});
+    [868,1185].forEach(function(w){allBags.push(mkBag('2026-05-25','day','6',w,'Phillip'));});
+
+    // ── 25 May 2026 — Night (Page 11) ──
+    // Operator: LuckyMan / Mercel / Labis
+    [955,971,1250].forEach(function(w){allBags.push(mkBag('2026-05-25','night','1',w,'Luckman'));});
+    [1500,1350,1150].forEach(function(w){allBags.push(mkBag('2026-05-25','night','2',w,'Luckman'));});
+    allBags.push(mkBag('2026-05-25','night','BH1',1696,'Luckman'));
+    allBags.push(mkBag('2026-05-25','night','3',960,'Luckman'));
+    [674,950].forEach(function(w){allBags.push(mkBag('2026-05-25','night','5',w,'Luckman'));});
+    [856,900].forEach(function(w){allBags.push(mkBag('2026-05-25','night','6',w,'Luckman'));});
+
+    // ── 26 May 2026 — Day (Page 10) ──
+    // Operator: Luckman
+    [1035,994].forEach(function(w){allBags.push(mkBag('2026-05-26','day','1',w,'Luckman'));});
+    [4355,2540].forEach(function(w){allBags.push(mkBag('2026-05-26','day','2',w,'Luckman'));});
+    [853,1123,1239].forEach(function(w){allBags.push(mkBag('2026-05-26','day','3',w,'Luckman'));});
+    allBags.push(mkBag('2026-05-26','day','4',353,'Luckman'));
+    allBags.push(mkBag('2026-05-26','day','5',1312,'Luckman'));
+    allBags.push(mkBag('2026-05-26','day','6',1055,'Luckman'));
+
+    // ── 26 May 2026 — Night (Page 9) ──
+    // Operator: Phillip
+    [1387,1198,1185].forEach(function(w){allBags.push(mkBag('2026-05-26','night','1',w,'Phillip'));});
+    [1032,1057,974,1100,1036,952].forEach(function(w){allBags.push(mkBag('2026-05-26','night','2',w,'Phillip'));});
+    allBags.push(mkBag('2026-05-26','night','3',1326,'Phillip'));
+    [1081,988].forEach(function(w){allBags.push(mkBag('2026-05-26','night','5',w,'Phillip'));});
+    allBags.push(mkBag('2026-05-26','night','6',1031,'Phillip'));
+
+    // ── 27 May 2026 — Day (Page 8) ──
+    // Operator: Lhine / Zuma
+    [829,897].forEach(function(w){allBags.push(mkBag('2026-05-27','day','1',w,'Lhine'));});
+    [939,994].forEach(function(w){allBags.push(mkBag('2026-05-27','day','2',w,'Lhine'));});
+    [465,449].forEach(function(w){allBags.push(mkBag('2026-05-27','day','BH1',w,'Lhine'));});
+    [905,920].forEach(function(w){allBags.push(mkBag('2026-05-27','day','3',w,'Lhine'));});
+    [1277,199].forEach(function(w){allBags.push(mkBag('2026-05-27','day','5',w,'Lhine'));});
+    [454,191].forEach(function(w){allBags.push(mkBag('2026-05-27','day','6',w,'Lhine'));});
+
+    // ── 27 May 2026 — Night (Page 7) ──
+    // Operator: Kleiman (Trainees: Depie, Soka)
+    [1287,680,963].forEach(function(w){allBags.push(mkBag('2026-05-27','night','1',w,'Kleiman'));});
+    [972,600,1320].forEach(function(w){allBags.push(mkBag('2026-05-27','night','2',w,'Kleiman'));});
+    allBags.push(mkBag('2026-05-27','night','BH1',382,'Kleiman'));
+    allBags.push(mkBag('2026-05-27','night','3',893,'Kleiman'));
+    allBags.push(mkBag('2026-05-27','night','5',902,'Kleiman'));
+    allBags.push(mkBag('2026-05-27','night','6',747,'Kleiman'));
+
+    // ── 28 May 2026 — Day (Page 6) ──
+    // Operator: Lhine / Moemhe / Garwin
+    [609,1025].forEach(function(w){allBags.push(mkBag('2026-05-28','day','1',w,'Lhine'));});
+    [1070,1071].forEach(function(w){allBags.push(mkBag('2026-05-28','day','2',w,'Lhine'));});
+    allBags.push(mkBag('2026-05-28','day','BH2',486,'Lhine'));
+    allBags.push(mkBag('2026-05-28','day','5',546,'Lhine'));
+    allBags.push(mkBag('2026-05-28','day','6',547,'Lhine'));
+
+    // ── 28 May 2026 — Night (Page 5) ──
+    // Operator: Kganu / Luckman (Trainees: Eddie, Soka)
+    allBags.push(mkBag('2026-05-28','night','2',960,'Kganu'));
+    allBags.push(mkBag('2026-05-28','night','3',728,'Kganu'));
+    allBags.push(mkBag('2026-05-28','night','4',379,'Kganu'));
+
+    // ── 29 May 2026 — Day (Page 4) ──
+    // Operator: Lhine / Klewyn
+    allBags.push(mkBag('2026-05-29','day','1',936,'Lhine'));
+    allBags.push(mkBag('2026-05-29','day','2',866,'Lhine'));
+    allBags.push(mkBag('2026-05-29','day','3',959,'Lhine'));
+    allBags.push(mkBag('2026-05-29','day','5',589,'Lhine'));
+    allBags.push(mkBag('2026-05-29','day','6',652,'Lhine'));
+
+    // ── 29 May 2026 — Night (Page 3) ──
+    // Operator: Coddie / Luckman / Sora
+    allBags.push(mkBag('2026-05-29','night','2',810,'Coddie'));
+    allBags.push(mkBag('2026-05-29','night','BH1',397,'Coddie'));
+    allBags.push(mkBag('2026-05-29','night','3',825,'Coddie'));
+
+    // ── 05 Jun 2026 — Day (Page 2) ──
+    // Operator: Phillip & Eric
+    [1040,1020].forEach(function(w){allBags.push(mkBag('2026-06-05','day','1',w,'Phillip'));});
+    [1192,1765].forEach(function(w){allBags.push(mkBag('2026-06-05','day','2',w,'Phillip'));});
+    allBags.push(mkBag('2026-06-05','day','3',1367,'Phillip'));
+    allBags.push(mkBag('2026-06-05','day','5',1220,'Phillip'));
+    allBags.push(mkBag('2026-06-05','day','6',1091,'Phillip'));
+
+    // ── 04 Jun 2026 — Day (Page 1) ──
+    // Operator: Phillip
+    allBags.push(mkBag('2026-06-04','day','1',119,'Phillip'));
+    [1282,1046].forEach(function(w){allBags.push(mkBag('2026-06-04','day','2',w,'Phillip'));});
+    allBags.push(mkBag('2026-06-04','day','BH1',646,'Phillip'));
+    allBags.push(mkBag('2026-06-04','day','BH2',549,'Phillip'));
+    allBags.push(mkBag('2026-06-04','day','5',25,'Phillip'));
+    allBags.push(mkBag('2026-06-04','day','6',935,'Phillip'));
+
+    // 3. Push all bags to server
+    showSyncStatus('⟳ Uploading '+allBags.length+' records...','var(--steel)');
+    const syncRes=await fetch(url+'/sync',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({bags:allBags,sales:[],shifts:[]})
+    });
+    if(!syncRes.ok) throw new Error('Failed to upload seed data');
+
+    // 4. Save locally
+    saveDB({bags:allBags,sales:[],shifts:[]});
+
+    showSyncStatus('✅ Done! '+allBags.length+' records seeded','var(--green)');
+    alert('✅ Wipe & seed complete!\n\n'+allBags.length+' bag records uploaded\n(Opening stock + scanned data 18 May – 05 Jun 2026)');
+    updateHomeStats();renderStock();renderSalesList();renderProdBagList();
+  }catch(e){
+    showSyncStatus('⚠ Failed: '+e.message,'var(--amber)');
+    alert('Error: '+e.message);
+  }
+}
+
+// ════════════ SERVER SYNC ════════════
+const SERVER_URL=(localStorage.getItem('bm_server_url')||'').trim();
+
+function getServerUrl(){return (localStorage.getItem('bm_server_url')||'').trim();}
+
+async function syncToServer(){
+  const url=getServerUrl();if(!url)return;
+  const db=getDB();
+  const settings=getSettings();
+  try{
+    await fetch(url+'/sync',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        bags:db.bags,
+        sales:db.sales||[],
+        shifts:db.shifts||[],
+        settings:{
+          operators:settings.operators,
+          clients:settings.clients,
+          feedMaterials:settings.feedMaterials,
+          products:settings.products,
+          chuteMap:settings.chuteMap
+        }
+      })
+    });
+    showSyncStatus('✅ Synced to server','var(--green)');
+  }catch(e){showSyncStatus('⚠ Sync failed: '+e.message,'var(--amber)');}
+}
+
+async function pullFromServer(){
+  const url=getServerUrl();if(!url){alert('Server URL not set. Go to Admin → Settings.');return;}
+  try{
+    showSyncStatus('⟳ Pulling from server...','var(--steel)');
+    const res=await fetch(url+'/pull');
+    if(!res.ok)throw new Error('Server error '+res.status);
+    const data=await res.json();
+    const db=getDB();
+    // Merge bags - server wins for conflicts
+    const bagMap={};
+    db.bags.forEach(function(b){bagMap[b.id]=b;});
+    (data.bags||[]).forEach(function(b){bagMap[b.id]=b;});
+    db.bags=Object.values(bagMap);
+    const saleMap={};
+    (db.sales||[]).forEach(function(s){saleMap[s.id]=s;});
+    (data.sales||[]).forEach(function(s){saleMap[s.id]=s;});
+    db.sales=Object.values(saleMap);
+    const shiftMap={};
+    (db.shifts||[]).forEach(function(s){shiftMap[s.id]=s;});
+    (data.shifts||[]).forEach(function(s){shiftMap[s.id]=s;});
+    db.shifts=Object.values(shiftMap);
+    saveDB(db);
+    // Merge settings
+    if(data.settings&&Object.keys(data.settings).length){
+      const s=getSettings();
+      if(data.settings.operators) s.operators=data.settings.operators;
+      if(data.settings.clients) s.clients=data.settings.clients;
+      if(data.settings.feedMaterials) s.feedMaterials=data.settings.feedMaterials;
+      if(data.settings.products) s.products=data.settings.products;
+      if(data.settings.chuteMap) s.chuteMap=data.settings.chuteMap;
+      saveSettings(s);
+    }
+    showSyncStatus('✅ Pulled '+data.bags.length+' bags from server','var(--green)');
+    updateHomeStats();renderStock();renderSalesList();renderProdBagList();
+  }catch(e){showSyncStatus('⚠ Pull failed: '+e.message,'var(--amber)');}
+}
+
+function showSyncStatus(msg,color){
+  let el=document.getElementById('sync-status-toast');
+  if(!el){el=document.createElement('div');el.id='sync-status-toast';el.style.cssText='position:fixed;top:70px;left:50%;transform:translateX(-50%);padding:8px 18px;border-radius:20px;font-size:13px;font-weight:700;color:#fff;z-index:999;transition:opacity .3s;';document.body.appendChild(el);}
+  el.style.background=color;el.textContent=msg;el.style.opacity='1';
+  clearTimeout(el._t);el._t=setTimeout(function(){el.style.opacity='0';},3000);
+}
+
+// Auto-sync every 5 minutes if server configured
+setInterval(function(){if(getServerUrl())syncToServer();},300000);
+
+// ════════════ INIT ════════════
+function updateOnlineIndicator(){
+  const dot=document.getElementById('online-dot');
+  if(!dot) return;
+  const url=getServerUrl();
+  if(!url){dot.style.background='var(--muted)';dot.title='No server configured';}
+  else if(navigator.onLine){dot.style.background='var(--green)';dot.title='Online';}
+  else{dot.style.background='var(--red)';dot.title='Offline';}
+}
+window.addEventListener('online', updateOnlineIndicator);
+window.addEventListener('offline', updateOnlineIndicator);
+
+async function init(){
+  document.getElementById('report-date-pick').value=new Date().toLocaleDateString('en-CA');
+  updateShiftBar();
+  updateHomeStats();
+  updateOnlineIndicator();
+  // Auto-pull from server on load if configured
+  const url=getServerUrl();
+  if(url&&navigator.onLine){
+    try{
+      showSyncStatus('⟳ Syncing with server...','var(--steel2)');
+      await pullFromServer();
+    }catch(e){console.log('Auto-pull failed:',e);}
+  }
+}
+init();
+</script>
+</body>
+</html>
