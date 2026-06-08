@@ -68,6 +68,20 @@ app.delete('/bags/:id', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+app.delete('/sales/:id', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM bm_sales WHERE id=$1', [req.params.id]);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.delete('/shifts/:id', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM bm_shifts WHERE id=$1', [req.params.id]);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 app.get('/sales', async (req, res) => {
   try {
     const { rows } = await pool.query('SELECT data FROM bm_sales ORDER BY created_at DESC');
