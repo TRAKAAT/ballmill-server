@@ -68,6 +68,31 @@ app.delete('/bags/:id', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// Wipe all bags (and shifts) belonging to a specific feed material
+app.delete('/bags/by-feed/:feedId', async (req, res) => {
+  try {
+    const { feedId } = req.params;
+    const { wipeShifts } = req.query; // pass ?wipeShifts=1 to also clear shifts for this feed
+    // Delete bags where data->>'feedId' matches
+    const bagResult = await pool.query(
+      `DELETE FROM bm_bags WHERE data->>'feedId' = $1`,
+      [feedId]
+    );
+    let shiftCount = 0;
+    if (wipeShifts === '1') {
+      const shiftResult = await pool.query(
+        `DELETE FROM bm_shifts WHERE data->>'feedId' = $1`,
+        [feedId]
+      );
+      shiftCount = shiftResult.rowCount;
+    }
+    res.json({ ok: true, bagsDeleted: bagResult.rowCount, shiftsDeleted: shiftCount });
+  } catch (e) {
+    console.error('DELETE /bags/by-feed error:', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 app.delete('/sales/:id', async (req, res) => {
   try {
     await pool.query('DELETE FROM bm_sales WHERE id=$1', [req.params.id]);
