@@ -171,6 +171,37 @@ app.post('/settings', async (req, res) => {
   } catch (e) { console.error('POST /settings:', e.message); res.status(500).json({ error: e.message }); }
 });
 
+// ACTIVE SHIFT — shared across all devices
+app.get('/active-shift', async (req, res) => {
+  try {
+    const { rows } = await pool.query(`SELECT data FROM bm_settings WHERE key='active_shift'`);
+    if (rows.length && rows[0].data && rows[0].data.id) {
+      res.json(rows[0].data);
+    } else {
+      res.json(null);
+    }
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/active-shift', async (req, res) => {
+  try {
+    const shift = req.body;
+    if (!shift || !shift.id) { res.status(400).json({ error: 'Invalid shift' }); return; }
+    await pool.query(
+      `INSERT INTO bm_settings(key,data) VALUES('active_shift',$1) ON CONFLICT(key) DO UPDATE SET data=$1, updated_at=NOW()`,
+      [JSON.stringify(shift)]
+    );
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.delete('/active-shift', async (req, res) => {
+  try {
+    await pool.query(`DELETE FROM bm_settings WHERE key='active_shift'`);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // FULL SYNC
 app.post('/sync', async (req, res) => {
   try {
